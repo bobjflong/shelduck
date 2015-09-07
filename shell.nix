@@ -4,15 +4,20 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, aeson, async, base, lens, lens-aeson, rainbow
-      , Spock, stdenv, stm, text, wreq
+  f = { mkDerivation, aeson, async, base, bytestring, hastache
+      , hspec, lens, lens-aeson, rainbow, random, regex-compat, Spock
+      , stdenv, stm, text, transformers, wreq
       }:
       mkDerivation {
         pname = "scalpel";
         version = "0.1.0.0";
         src = ./.;
         libraryHaskellDepends = [
-          aeson async base lens lens-aeson rainbow Spock stm text wreq
+          aeson async base bytestring hastache lens lens-aeson rainbow random
+          Spock stm text transformers wreq
+        ];
+        testHaskellDepends = [
+          aeson base hspec lens regex-compat stm text transformers
         ];
         license = stdenv.lib.licenses.asl20;
       };
