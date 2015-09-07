@@ -2,18 +2,18 @@
 
 module IntercomDefinitions where
 
-import           Control.Lens          hiding ((.=))
-import           Data.ByteString       hiding (pack, getLine)
-import           Data.ByteString.Char8 (pack)
-import qualified Network.Wreq          as W
-import           System.Environment
-import Scalpel hiding (opts)
-import Data.Aeson ((.=), object)
-import qualified Data.Text as T
-import           Control.Concurrent.STM.TVar
-import           Control.Monad.STM
 import           Control.Concurrent.Async
+import           Control.Concurrent.STM.TVar
+import           Control.Lens                hiding ((.=))
+import           Control.Monad.STM
 import           Control.Monad.Trans.Reader
+import           Data.Aeson                  (object, (.=))
+import           Data.ByteString             hiding (getLine, pack)
+import           Data.ByteString.Char8       (pack)
+import qualified Data.Text                   as T
+import qualified Network.Wreq                as W
+import           Scalpel                     hiding (opts)
+import           System.Environment
 
 opts = do
   appId <- getEnv "SCALPEL_INTERCOM_APP_ID"
