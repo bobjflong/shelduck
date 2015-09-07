@@ -22,6 +22,7 @@ import           Data.Text
 import           Data.Text.Encoding
 import qualified Network.Wreq                as W
 import           Rainbow
+import           Shelly
 import           Templating
 import           Web.Spock.Safe
 
@@ -29,6 +30,7 @@ endpoint :: String
 endpoint = "http://requestb.in/zsczv6zs?foo={{random}}"
 
 exampleRequest = WebhookRequest endpoint opts (object ["foo" .= ("bar{{random}}" :: Text)]) "baz"
+blank = WebhookRequest mempty opts (object []) mempty
 
 opts = W.defaults & W.header "Accept" .~ ["application/json"]
                   & W.header "Content-Type" .~ ["application/json"]
@@ -44,8 +46,8 @@ $(makeLenses ''WebhookRequest)
 
 type TopicResult = Maybe Text
 
-doPost :: (Text, Text) -> ReaderT a IO (W.Response L.ByteString)
-doPost (e, p) = lift $ W.post (unpack e) (encodeUtf8 p)
+doPost :: (WebhookRequest, Text, Text) -> ReaderT a IO (W.Response L.ByteString)
+doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
 
 doLog :: W.Response L.ByteString -> ReaderT a IO ()
 doLog r = lift ((success . pack . show) (r ^. W.responseStatus)) & void
@@ -65,7 +67,7 @@ performRequest w = doTemplating >>= doPost >>= doLog >> doWait >> doHandle w
   where doTemplating = lift $ do
           e <- template (pack $ w ^. requestEndpoint)
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
-          return (e, p)
+          return (w, e, p)
 
 handleSuccess :: Text -> Text -> IO Bool
 handleSuccess b t =
@@ -90,8 +92,11 @@ start = do
   concurrently (server r) (runReaderT (performRequest exampleRequest) r)
   return ()
 
+ngrok :: IO ()
+ngrok = shelly $ verbosely $ run "ngrok" ["start", "scalpel"] >>= (liftIO . info)
+
 server :: TVar TopicResult -> IO ()
-server t = do
+server t = void $ concurrently ngrok $ do
   info "Starting server to listen for webhooks"
   runSpock 8080 $ spockT id $
                   post root $ do

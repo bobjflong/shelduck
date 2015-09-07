@@ -5,8 +5,8 @@ let
   inherit (nixpkgs) pkgs;
 
   f = { mkDerivation, aeson, async, base, bytestring, hastache
-      , hspec, lens, lens-aeson, rainbow, random, regex-compat, Spock
-      , stdenv, stm, text, transformers, wreq
+      , hspec, lens, lens-aeson, rainbow, random, regex-compat, shelly
+      , Spock, stdenv, stm, text, transformers, wreq
       }:
       mkDerivation {
         pname = "scalpel";
@@ -14,7 +14,7 @@ let
         src = ./.;
         libraryHaskellDepends = [
           aeson async base bytestring hastache lens lens-aeson rainbow random
-          Spock stm text transformers wreq
+          shelly Spock stm text transformers wreq
         ];
         testHaskellDepends = [
           aeson base hspec lens regex-compat stm text transformers

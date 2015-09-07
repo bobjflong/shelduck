@@ -16,7 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Scalpel, Templating
+  exposed-modules:     Scalpel, Templating, IntercomDefinitions
   build-depends:       base < 5
                        , Spock
                        , async
@@ -31,6 +31,7 @@ library
                        , random
                        , bytestring
                        , transformers
+                       , shelly
   hs-source-dirs:      src
   default-language:    Haskell2010
 
