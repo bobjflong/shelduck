@@ -53,8 +53,10 @@ doWait = lift (threadDelay fiveSecs) & void
 doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
 doHandle w = ask >>=
   \t -> lift $ do
-    b <- readTVarIO t
-    atomically $ writeTVar t Nothing
+    b <- atomically $ do
+      b' <- readTVar t
+      writeTVar t Nothing
+      return b'
     handleSuccess (fromMaybe mempty b) (w ^. requestTopic)
 
 performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
