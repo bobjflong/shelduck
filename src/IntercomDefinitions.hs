@@ -126,7 +126,6 @@ runIntercomDefinitions = do
   r <- newTVarIO Nothing :: IO (TVar TopicResult)
   definitions <- intercomDefinitions
   concurrently (server r) (mapM_ (runDefiniton r) definitions)
-  getLine
   return ()
 
 runDefiniton :: TVar TopicResult -> WebhookRequest -> IO Bool

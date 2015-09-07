@@ -43,7 +43,6 @@ run = do
   info "Running definitions"
   r <- newTVarIO Nothing :: IO (TVar TopicResult)
   concurrently (server r) (mapM_ (runDefiniton r) definitions)
-  getLine
   return ()
 
 runDefiniton :: TVar TopicResult -> WebhookRequest -> IO Bool
