@@ -1,7 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Scalpel where
+module Scalpel (
+    requestTopic,
+    requestEndpoint,
+    requestOpts,
+    requestParameters,
+    info,
+    TopicResult,
+    server,
+    WebhookRequest,
+    performRequest,
+    blank
+  ) where
 
 import           Configuration
 import           Control.Concurrent
