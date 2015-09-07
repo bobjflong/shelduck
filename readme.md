@@ -1,6 +1,6 @@
 ### Scalpel
 
-Scalpel is an opinionated tool for locally testing webhooks on a remote service. It does this by mapping API requests to expected `topic`s.
+Scalpel is a hybrid web-server/api-client. Its main use is as an opinionated tool for QAing webhooks on remote services.
 
 Scalpel is made up of a few concurrent components:
 
