@@ -50,4 +50,5 @@ test-suite tests
                        , text
                        , transformers
                        , stm
+                       , wreq
   default-language:    Haskell2010

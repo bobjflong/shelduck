@@ -44,7 +44,7 @@ doPost :: (WebhookRequest, Text, Text) -> ReaderT a IO (W.Response L.ByteString)
 doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
 
 doLog :: W.Response L.ByteString -> ReaderT a IO ()
-doLog r = lift ((success . pack . show) (r ^. W.responseStatus)) & void
+doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) & void
 
 doWait :: ReaderT a IO ()
 doWait = lift (threadDelay fiveSecs) & void
@@ -54,6 +54,7 @@ doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
 doHandle w = ask >>=
   \t -> lift $ do
     b <- readTVarIO t
+    atomically $ writeTVar t Nothing
     handleSuccess (fromMaybe mempty b) (w ^. requestTopic)
 
 performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool

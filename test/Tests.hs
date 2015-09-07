@@ -2,14 +2,15 @@
 
 module Main where
 
+import           Control.Concurrent.STM
+import           Control.Monad.Trans.Reader
+import           Data.Aeson
 import           Data.Text
+import           Scalpel
 import           Templating
 import           Test.Hspec
 import           Text.Regex
-import Scalpel
-import Data.Aeson
-import           Control.Concurrent.STM
-import           Control.Monad.Trans.Reader
+import qualified Network.Wreq                as W
 
 main :: IO ()
 main = hspec $ do
@@ -21,13 +22,13 @@ main = hspec $ do
   describe "reading results" $ do
     it "detects success" $ do
       r <- newTVarIO (Just "foo") :: IO (TVar TopicResult)
-      let req = WebhookRequest "x" (object []) "foo"
+      let req = WebhookRequest "x" W.defaults (object []) "foo"
           handler = doHandle req
       result <- runReaderT handler r
       result `shouldBe` True
     it "detects failures" $ do
       r <- newTVarIO (Just "bar") :: IO (TVar TopicResult)
-      let req = WebhookRequest "x" (object []) "foo"
+      let req = WebhookRequest "x" W.defaults (object []) "foo"
           handler = doHandle req
       result <- runReaderT handler r
       result `shouldBe` False
