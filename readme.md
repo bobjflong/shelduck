@@ -49,3 +49,7 @@ run = do
 runDefiniton :: TVar TopicResult -> WebhookRequest -> IO Bool
 runDefiniton t w = let req = performRequest w in runReaderT req t
 ```
+
+### Gif
+
+<img src="https://raw.githubusercontent.com/bobjflong/scalpel/master/gif.gif"/>
