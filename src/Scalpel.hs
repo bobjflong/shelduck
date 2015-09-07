@@ -26,21 +26,15 @@ import           Shelly
 import           Templating
 import           Web.Spock.Safe
 
-endpoint :: String
-endpoint = "http://requestb.in/zsczv6zs?foo={{random}}"
-
-exampleRequest = WebhookRequest endpoint opts (object ["foo" .= ("bar{{random}}" :: Text)]) "baz"
-blank = WebhookRequest mempty opts (object []) mempty
-
-opts = W.defaults & W.header "Accept" .~ ["application/json"]
-                  & W.header "Content-Type" .~ ["application/json"]
-
 data WebhookRequest = WebhookRequest {
   _requestEndpoint   :: String,
   _requestOpts       :: W.Options,
   _requestParameters :: Value,
   _requestTopic      :: Text
 }
+
+blank :: WebhookRequest
+blank = WebhookRequest mempty W.defaults (object []) mempty
 
 $(makeLenses ''WebhookRequest)
 
@@ -84,13 +78,6 @@ info x = putChunkLn $ chunk x & fore blue
 
 success :: Text -> IO ()
 success x = putChunkLn $ chunk x & fore green
-
-start :: IO ()
-start = do
-  info "Creating TVar"
-  r <- newTVarIO Nothing :: IO (TVar TopicResult)
-  concurrently (server r) (runReaderT (performRequest exampleRequest) r)
-  return ()
 
 ngrok :: IO ()
 ngrok = shelly $ verbosely $ run "ngrok" ["start", "scalpel"] >>= (liftIO . info)
