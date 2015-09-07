@@ -3,6 +3,7 @@
 
 module Scalpel where
 
+import           Configuration
 import           Control.Concurrent
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
@@ -47,8 +48,7 @@ doLog :: W.Response L.ByteString -> ReaderT a IO ()
 doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) & void
 
 doWait :: ReaderT a IO ()
-doWait = lift (threadDelay fiveSecs) & void
-  where fiveSecs = 5000000
+doWait = lift (threadDelay pollTime) & void
 
 doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
 doHandle w = ask >>=
