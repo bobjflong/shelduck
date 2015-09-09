@@ -9,9 +9,11 @@ import           Control.Monad
 import           Control.Monad.STM
 import           Control.Monad.Trans.Reader
 import           Data.Aeson                  (object, (.=))
+import           Data.Aeson.Lens             as AL
 import           Data.ByteString             hiding (getLine, pack)
 import           Data.ByteString.Char8       (pack)
 import qualified Data.ByteString.Lazy        as L
+import           Data.Maybe
 import qualified Data.Text                   as T
 import qualified Network.Wreq                as W
 import           Scalpel                     hiding (opts)
@@ -65,19 +67,19 @@ tagName = "foo"
 run :: TVar TopicResult -> IO ()
 run t = void $ do
   options <- opts
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
-             & requestOpts .~ options
-             & requestParameters .~ object []
-             & requestTopic .~ "contact.created"
+  contactResp <- go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
+                    & requestOpts .~ options
+                    & requestParameters .~ object []
+                    & requestTopic .~ "contact.created"
 
   go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
              & requestOpts .~ options
-             & requestParameters .~ object ["id" .= contactId, "email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
+             & requestParameters .~ object ["id" .= cid contactResp, "email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
              & requestTopic .~ "contact.added_email"
 
   go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts/convert"
              & requestOpts .~ options
-             & requestParameters .~ object ["contact" .= object ["id" .= contactId], "user" .= object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]]
+             & requestParameters .~ object ["contact" .= object ["id" .= cid contactResp], "user" .= object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]]
              & requestTopic .~ "contact.signed_up"
 
   go $ blank & requestEndpoint .~ "https://api.intercom.io/users"
@@ -120,6 +122,7 @@ run t = void $ do
              & requestParameters .~ object ["name" .= tagName, "users" .= [object ["untag" .= True, "id" .= userId]]]
              & requestTopic .~ "user.tag.deleted"
   where go = runDefinition t
+        cid resp = resp ^. W.responseBody . key "id" . _String
 
 runIntercomDefinitions :: IO ()
 runIntercomDefinitions = do
