@@ -1,4 +1,4 @@
 module Configuration where
 
 pollTime :: Int
-pollTime = 5000000
+pollTime = 10000000

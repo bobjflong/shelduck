@@ -68,9 +68,9 @@ run :: TVar TopicResult -> IO ()
 run t = void $ do
   options <- opts
   contactResp <- go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
-                    & requestOpts .~ options
-                    & requestParameters .~ object []
-                    & requestTopic .~ "contact.created"
+                            & requestOpts .~ options
+                            & requestParameters .~ object []
+                            & requestTopic .~ "contact.created"
 
   go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
              & requestOpts .~ options
