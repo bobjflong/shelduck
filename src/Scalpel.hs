@@ -11,7 +11,9 @@ module Scalpel (
     server,
     WebhookRequest,
     performRequest,
-    blank
+    blank,
+    doHandle,
+    record
   ) where
 
 import           Configuration
@@ -55,11 +57,11 @@ type TopicResult = Maybe Text
 doPost :: (WebhookRequest, Text, Text) -> ReaderT a IO (W.Response L.ByteString)
 doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
 
-doLog :: W.Response L.ByteString -> ReaderT a IO ()
-doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) & void
+doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
+doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) >> return r
 
-doWait :: ReaderT a IO ()
-doWait = lift (threadDelay pollTime) & void
+doWait :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
+doWait x = lift (threadDelay pollTime) >> return x
 
 doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
 doHandle w = ask >>=
@@ -70,8 +72,8 @@ doHandle w = ask >>=
       return b'
     handleSuccess (fromMaybe mempty b) (w ^. requestTopic)
 
-performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
-performRequest w = doTemplating >>= doPost >>= doLog >> doWait >> doHandle w
+performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO (W.Response L.ByteString)
+performRequest w = doTemplating >>= doPost >>= doLog >>= doWait >>= (\x -> doHandle w >> return x)
   where doTemplating = lift $ do
           e <- template (pack $ w ^. requestEndpoint)
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
