@@ -5,11 +5,13 @@ module IntercomDefinitions where
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
+import           Control.Monad
 import           Control.Monad.STM
 import           Control.Monad.Trans.Reader
 import           Data.Aeson                  (object, (.=))
 import           Data.ByteString             hiding (getLine, pack)
 import           Data.ByteString.Char8       (pack)
+import qualified Data.ByteString.Lazy        as L
 import qualified Data.Text                   as T
 import qualified Network.Wreq                as W
 import           Scalpel                     hiding (opts)
@@ -60,73 +62,71 @@ hi = "Hi :)"
 tagName :: T.Text
 tagName = "foo"
 
-intercomDefinitions :: DefinitionList
-intercomDefinitions = do
+run :: TVar TopicResult -> IO ()
+run t = void $ do
   options <- opts
-  return [
-    blank & requestEndpoint .~ "https://api.intercom.io/contacts"
-          & requestOpts .~ options
-          & requestParameters .~ object []
-          & requestTopic .~ "contact.created"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/contacts"
-          & requestOpts .~ options
-          & requestParameters .~ object ["id" .= contactId, "email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
-          & requestTopic .~ "contact.added_email"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/contacts/convert"
-          & requestOpts .~ options
-          & requestParameters .~ object ["contact" .= object ["id" .= contactId], "user" .= object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]]
-          & requestTopic .~ "contact.signed_up"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/users"
-          & requestOpts .~ options
-          & requestParameters .~ object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
-          & requestTopic .~ "user.created"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/messages"
-          & requestOpts .~ options
-          & requestParameters .~ object ["from" .= object ["id" .= userId, "type" .= userType], "body" .= hi]
-          & requestTopic .~ "conversation.user.created"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
-          & requestOpts .~ options
-          & requestParameters .~ object ["intercom_user_id" .= userId, "body" .= hi, "type" .= userType, "message_type" .= commentType]
-          & requestTopic .~ "conversation.user.replied"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
-          & requestOpts .~ options
-          & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= commentType]
-          & requestTopic .~ "conversation.admin.replied"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
-          & requestOpts .~ options
-          & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= noteType]
-          & requestTopic .~ "conversation.admin.noted"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
-          & requestOpts .~ options
-          & requestParameters .~ object ["admin_id" .= adminId, "assignee_id" .= assigneeId, "body" .= hi, "type" .= adminType, "message_type" .= assignmentType]
-          & requestTopic .~ "conversation.admin.assigned"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/tags"
-          & requestOpts .~ options
-          & requestParameters .~ object ["name" .= tagName, "users" .= [object ["id" .= userId]]]
-          & requestTopic .~ "user.tag.created"
-    ,
-    blank & requestEndpoint .~ "https://api.intercom.io/tags"
-          & requestOpts .~ options
-          & requestParameters .~ object ["name" .= tagName, "users" .= [object ["untag" .= True, "id" .= userId]]]
-          & requestTopic .~ "user.tag.deleted"
-    ]
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
+             & requestOpts .~ options
+             & requestParameters .~ object []
+             & requestTopic .~ "contact.created"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
+             & requestOpts .~ options
+             & requestParameters .~ object ["id" .= contactId, "email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
+             & requestTopic .~ "contact.added_email"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts/convert"
+             & requestOpts .~ options
+             & requestParameters .~ object ["contact" .= object ["id" .= contactId], "user" .= object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]]
+             & requestTopic .~ "contact.signed_up"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/users"
+             & requestOpts .~ options
+             & requestParameters .~ object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
+             & requestTopic .~ "user.created"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/messages"
+             & requestOpts .~ options
+             & requestParameters .~ object ["from" .= object ["id" .= userId, "type" .= userType], "body" .= hi]
+             & requestTopic .~ "conversation.user.created"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
+             & requestOpts .~ options
+             & requestParameters .~ object ["intercom_user_id" .= userId, "body" .= hi, "type" .= userType, "message_type" .= commentType]
+             & requestTopic .~ "conversation.user.replied"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
+             & requestOpts .~ options
+             & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= commentType]
+             & requestTopic .~ "conversation.admin.replied"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
+             & requestOpts .~ options
+             & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= noteType]
+             & requestTopic .~ "conversation.admin.noted"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
+             & requestOpts .~ options
+             & requestParameters .~ object ["admin_id" .= adminId, "assignee_id" .= assigneeId, "body" .= hi, "type" .= adminType, "message_type" .= assignmentType]
+             & requestTopic .~ "conversation.admin.assigned"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/tags"
+             & requestOpts .~ options
+             & requestParameters .~ object ["name" .= tagName, "users" .= [object ["id" .= userId]]]
+             & requestTopic .~ "user.tag.created"
+
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/tags"
+             & requestOpts .~ options
+             & requestParameters .~ object ["name" .= tagName, "users" .= [object ["untag" .= True, "id" .= userId]]]
+             & requestTopic .~ "user.tag.deleted"
+  where go = runDefinition t
 
 runIntercomDefinitions :: IO ()
 runIntercomDefinitions = do
   info "Running Intercom definitions"
   r <- newTVarIO Nothing :: IO (TVar TopicResult)
-  definitions <- intercomDefinitions
-  concurrently (server r) (mapM_ (runDefiniton r) definitions)
+  concurrently (server r) (run r)
   return ()
 
-runDefiniton :: TVar TopicResult -> WebhookRequest -> IO Bool
-runDefiniton t w = let req = performRequest w in runReaderT req t
+runDefinition :: TVar TopicResult -> WebhookRequest -> IO (W.Response L.ByteString)
+runDefinition t w = let req = performRequest w in runReaderT req t

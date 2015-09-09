@@ -38,15 +38,26 @@ Check out src/IntercomDefinitions.hs for some descriptions of [Intercom webhooks
 You can run Scalpel by concurrently starting the server and request engine:
 
 ```haskell
-run :: IO ()
-run = do
+run :: TVar TopicResult -> IO ()
+run t = void $ do
+  options <- opts
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
+             & requestOpts .~ options
+             & requestParameters .~ object []
+             & requestTopic .~ "contact.created"
+  -- ...
+  where go = runDefinition t
+
+
+runDefinition :: TVar TopicResult -> WebhookRequest -> IO (W.Response L.ByteString)
+runDefinition t w = let req = performRequest w in runReaderT req t
+
+runDefinitions :: IO ()
+runDefinitions = do
   info "Running definitions"
   r <- newTVarIO Nothing :: IO (TVar TopicResult)
-  concurrently (server r) (mapM_ (runDefiniton r) definitions)
+  concurrently (server r) (run r)
   return ()
-
-runDefiniton :: TVar TopicResult -> WebhookRequest -> IO Bool
-runDefiniton t w = let req = performRequest w in runReaderT req t
 ```
 
 ### Gif
