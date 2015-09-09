@@ -17,7 +17,7 @@ let
           shelly Spock stm text transformers wreq
         ];
         testHaskellDepends = [
-          aeson base hspec lens regex-compat stm text transformers
+          aeson base hspec lens regex-compat stm text transformers wreq
         ];
         license = stdenv.lib.licenses.asl20;
       };
