@@ -16,7 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Scalpel, Templating, IntercomDefinitions
+  exposed-modules:     Scalpel, Templating, IntercomDefinitions, Internal
   other-modules:       Configuration
   build-depends:       base < 5
                        , Spock

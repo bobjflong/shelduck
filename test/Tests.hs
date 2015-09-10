@@ -7,6 +7,7 @@ import           Control.Lens
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import           Data.Text
+import           Internal
 import qualified Network.Wreq               as W
 import           Scalpel
 import           Templating

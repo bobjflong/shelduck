@@ -14,9 +14,7 @@ module Scalpel (
     WebhookRequest,
     performRequest,
     blank,
-    doHandle,
-    record,
-    pollingIO
+    doHandle
   ) where
 
 import           Configuration
@@ -37,6 +35,7 @@ import           Data.Maybe
 import           Data.Monoid
 import           Data.Text
 import           Data.Text.Encoding
+import           Internal
 import qualified Network.Wreq                as W
 import           Rainbow
 import           Shelly
@@ -69,12 +68,6 @@ doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p
 
 doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
 doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) >> return r
-
-pollingIO :: Int -> TVar a -> (TVar a -> IO Bool) -> IO b -> IO (Int, b)
-pollingIO c t x i = temporaryFailure >>= \f -> if f then tryAgain else finish
-  where tryAgain = threadDelay pollTime >> pollingIO (c - 1) t x i
-        finish = i >>= \result -> return (c, result)
-        temporaryFailure = x t >>= \p -> return $ not p && c > 0
 
 doWait :: Int -> W.Response L.ByteString -> ReaderT (TVar TopicResult) IO TimedResponse
 doWait c x = ask >>=
@@ -139,6 +132,3 @@ server t = void $ concurrently ngrok $ do
                          Nothing -> record Nothing t
                        r <- lift $ readTVarIO t
                        text $ r & (pack . show)
-
-record :: Maybe Text -> TVar TopicResult -> IO ()
-record t r = atomically $ writeTVar r t
