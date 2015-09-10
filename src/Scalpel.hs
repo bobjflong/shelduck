@@ -95,8 +95,7 @@ performRequest w = doTemplating >>=
                    doLog >>=
                    doWait polls >>=
                    (\x -> lift (doLogTimings polls x) >> doHandle w >> return x)
-  where polls = 1000
-        doTemplating = lift $ do
+  where doTemplating = lift $ do
           e <- template (pack $ w ^. requestEndpoint)
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
           return (w, e, p)
