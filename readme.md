@@ -50,7 +50,10 @@ run t = void $ do
 
 
 runDefinition :: TVar TopicResult -> WebhookRequest -> IO (W.Response L.ByteString)
-runDefinition t w = let req = performRequest w in runReaderT req t
+runDefinition t w = do
+  x <- runReaderT req t
+  return $ x ^. response
+  where req = performRequest w
 
 runDefinitions :: IO ()
 runDefinitions = do
@@ -59,7 +62,3 @@ runDefinitions = do
   concurrently (server r) (run r)
   return ()
 ```
-
-### Gif
-
-<img src="https://raw.githubusercontent.com/bobjflong/scalpel/master/gif.gif"/>

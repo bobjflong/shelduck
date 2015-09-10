@@ -45,3 +45,17 @@ main = hspec $ do
       record (Just "foo") r
       result <- readTVarIO r
       result `shouldBe` Just "foo"
+  describe "polling for TVar results" $ do
+    it "works" $ do
+      r <- newTVarIO Nothing :: IO (TVar TopicResult)
+      let c = const $ return True
+      let f = return "Hello world" :: IO String
+      (_, t) <- pollingIO 1 r c f
+      t `shouldBe` "Hello world"
+    it "gives up" $ do
+      r <- newTVarIO Nothing :: IO (TVar TopicResult)
+      let c = const $ return False
+      let f = return "Hello world" :: IO String
+      (i, t) <- pollingIO 10 r c f
+      t `shouldBe` "Hello world"
+      i `shouldBe` 0
