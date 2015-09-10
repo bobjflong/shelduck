@@ -2,6 +2,7 @@
 
 module IntercomDefinitions where
 
+import           Control.Concurrent
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
@@ -66,6 +67,7 @@ tagName = "foo"
 
 run :: TVar TopicResult -> IO ()
 run t = void $ do
+  threadDelay 5000000
   options <- opts
   contactResp <- go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
                             & requestOpts .~ options
