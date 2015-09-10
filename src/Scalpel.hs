@@ -6,6 +6,8 @@ module Scalpel (
     requestEndpoint,
     requestOpts,
     requestParameters,
+    Scalpel.response,
+    timing,
     info,
     TopicResult,
     server,
@@ -13,7 +15,8 @@ module Scalpel (
     performRequest,
     blank,
     doHandle,
-    record
+    record,
+    pollingIO
   ) where
 
 import           Configuration
@@ -52,6 +55,13 @@ blank = WebhookRequest mempty W.defaults (object []) mempty
 
 $(makeLenses ''WebhookRequest)
 
+data TimedResponse = TimedResponse {
+  _response :: W.Response L.ByteString,
+  _timing   :: Int
+} deriving (Show)
+
+$(makeLenses ''TimedResponse)
+
 type TopicResult = Maybe Text
 
 doPost :: (WebhookRequest, Text, Text) -> ReaderT a IO (W.Response L.ByteString)
@@ -60,8 +70,20 @@ doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p
 doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
 doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) >> return r
 
-doWait :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
-doWait x = lift (threadDelay pollTime) >> return x
+pollingIO :: Int -> TVar a -> (TVar a -> IO Bool) -> IO b -> IO (Int, b)
+pollingIO c t x i = do
+  f <- temporaryFailure
+  if f then tryAgain else finish
+  where tryAgain = threadDelay pollTime >> pollingIO (c - 1) t x i
+        finish = i >>= \result -> return (c, result)
+        temporaryFailure = x t >>= \p -> return $ not p && c > 0
+
+doWait :: Int -> W.Response L.ByteString -> ReaderT (TVar TopicResult) IO TimedResponse
+doWait c x = ask >>=
+  \t -> lift $ do
+    (c, r) <- pollingIO c t predicate (return x)
+    return $ TimedResponse r c
+  where predicate t = fmap isJust (readTVarIO t)
 
 doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
 doHandle w = ask >>=
@@ -72,9 +94,18 @@ doHandle w = ask >>=
       return b'
     handleSuccess (fromMaybe mempty b) (w ^. requestTopic)
 
-performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO (W.Response L.ByteString)
-performRequest w = doTemplating >>= doPost >>= doLog >>= doWait >>= (\x -> doHandle w >> return x)
-  where doTemplating = lift $ do
+doLogTimings :: Int -> TimedResponse -> IO ()
+doLogTimings i t = void $ info $ mconcat ["Took approx: ", (pack . show) time, " microseconds..."]
+  where time = (i - (t ^. timing)) * pollTime
+
+performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO TimedResponse
+performRequest w = doTemplating >>=
+                   doPost >>=
+                   doLog >>=
+                   doWait polls >>=
+                   (\x -> lift (doLogTimings polls x) >> doHandle w >> return x)
+  where polls = 1000
+        doTemplating = lift $ do
           e <- template (pack $ w ^. requestEndpoint)
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
           return (w, e, p)

@@ -132,4 +132,7 @@ runIntercomDefinitions = do
   return ()
 
 runDefinition :: TVar TopicResult -> WebhookRequest -> IO (W.Response L.ByteString)
-runDefinition t w = let req = performRequest w in runReaderT req t
+runDefinition t w = do
+  x <- runReaderT req t
+  return $ x ^. response
+  where req = performRequest w
