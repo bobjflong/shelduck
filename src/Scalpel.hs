@@ -71,9 +71,7 @@ doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
 doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) >> return r
 
 pollingIO :: Int -> TVar a -> (TVar a -> IO Bool) -> IO b -> IO (Int, b)
-pollingIO c t x i = do
-  f <- temporaryFailure
-  if f then tryAgain else finish
+pollingIO c t x i = temporaryFailure >>= \f -> if f then tryAgain else finish
   where tryAgain = threadDelay pollTime >> pollingIO (c - 1) t x i
         finish = i >>= \result -> return (c, result)
         temporaryFailure = x t >>= \p -> return $ not p && c > 0
