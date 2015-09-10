@@ -112,7 +112,7 @@ failure :: Text -> IO ()
 failure x = putChunkLn $ chunk x & fore red
 
 info :: Text -> IO ()
-info x = putChunkLn $ chunk x & fore blue
+info x = putChunkLn $ chunk x & fore cyan
 
 success :: Text -> IO ()
 success x = putChunkLn $ chunk x & fore green
