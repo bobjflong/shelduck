@@ -43,7 +43,7 @@ import           Templating
 import           Web.Spock.Safe
 
 data WebhookRequest = WebhookRequest {
-  _requestEndpoint   :: String,
+  _requestEndpoint   :: Text,
   _requestOpts       :: W.Options,
   _requestParameters :: Value,
   _requestTopic      :: Text
@@ -96,7 +96,7 @@ performRequest w = doTemplating >>=
                    doWait polls >>=
                    (\x -> lift (doLogTimings polls x) >> doHandle w >> return x)
   where doTemplating = lift $ do
-          e <- template (pack $ w ^. requestEndpoint)
+          e <- template (w ^. requestEndpoint)
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
           return (w, e, p)
 
