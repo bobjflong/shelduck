@@ -12,13 +12,20 @@ let
         pname = "scalpel";
         version = "0.1.0.0";
         src = ./.;
+        isLibrary = true;
+        isExecutable = true;
         libraryHaskellDepends = [
+          aeson async base bytestring hastache lens lens-aeson rainbow random
+          shelly Spock stm text transformers wreq
+        ];
+        executableHaskellDepends = [
           aeson async base bytestring hastache lens lens-aeson rainbow random
           shelly Spock stm text transformers wreq
         ];
         testHaskellDepends = [
           aeson base hspec lens regex-compat stm text transformers wreq
         ];
+        description = "Test webhooks locally";
         license = stdenv.lib.licenses.asl20;
       };
 
