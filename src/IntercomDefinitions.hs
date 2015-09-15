@@ -21,8 +21,8 @@ import           ScalpWebhooks               hiding (opts)
 import           System.Environment
 
 opts = do
-  appId <- getEnv "SCALPEL_INTERCOM_APP_ID"
-  appApiKey <- getEnv "SCALPEL_INTERCOM_APP_API_KEY"
+  appId <- getEnv "INTERCOM_APP_ID"
+  appApiKey <- getEnv "INTERCOM_APP_API_KEY"
   return $ W.defaults & W.header "Accept" .~ ["application/json"]
                       & W.header "Content-Type" .~ ["application/json"]
                       & W.auth ?~ W.basicAuth (pack appId) (pack appApiKey)
