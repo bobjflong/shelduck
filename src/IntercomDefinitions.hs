@@ -130,7 +130,8 @@ runIntercomDefinitions :: IO ()
 runIntercomDefinitions = do
   info "Running Intercom definitions"
   r <- newTVarIO Nothing :: IO (TVar TopicResult)
-  concurrently (server r) (run r)
+  withAsync (server r) $ \webServer ->
+    withAsync (run r) $ \testRun -> wait testRun >> cancel webServer
   return ()
 
 runDefinition :: TVar TopicResult -> WebhookRequest -> IO (W.Response L.ByteString)
