@@ -1,4 +1,4 @@
-name:                scalp-webhooks
+name:                shelduck
 version:             0.1.2.0
 -- synopsis:            
 -- description:         
@@ -16,10 +16,10 @@ cabal-version:       >=1.10
 
 source-repository head
   type: git
-  location: https://github.com/bobjflong/scalp-webhooks.git
+  location: https://github.com/bobjflong/shelduck.git
 
 library
-  exposed-modules:     ScalpWebhooks, Templating, IntercomDefinitions, Internal
+  exposed-modules:     Shelduck, Templating, IntercomDefinitions, Internal
   other-modules:       Configuration
   build-depends:       base < 5
                        , Spock
@@ -39,10 +39,10 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
 
-executable scalp-webhooks
+executable shelduck
   main-is:             Main.hs
   build-depends:       base < 5
-                       , scalp-webhooks
+                       , shelduck
                        , Spock
                        , async
                        , text
@@ -70,7 +70,7 @@ test-suite tests
                        , hspec
                        , lens
                        , aeson
-                       , scalp-webhooks
+                       , shelduck
                        , regex-compat
                        , text
                        , transformers

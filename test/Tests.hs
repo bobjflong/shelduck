@@ -9,7 +9,7 @@ import           Data.Aeson
 import           Data.Text
 import           Internal
 import qualified Network.Wreq               as W
-import           ScalpWebhooks
+import           Shelduck
 import           Templating
 import           Test.Hspec
 import           Text.Regex

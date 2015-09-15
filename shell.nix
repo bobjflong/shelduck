@@ -9,7 +9,7 @@ let
       , Spock, stdenv, stm, text, transformers, wreq
       }:
       mkDerivation {
-        pname = "scalp-webhooks";
+        pname = "shelduck";
         version = "0.1.2.0";
         src = ./.;
         isLibrary = true;

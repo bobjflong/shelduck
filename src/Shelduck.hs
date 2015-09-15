@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module ScalpWebhooks (
+module Shelduck (
     requestTopic,
     requestEndpoint,
     requestOpts,
     requestParameters,
-    ScalpWebhooks.response,
+    Shelduck.response,
     timing,
     info,
     TopicResult,
@@ -117,7 +117,7 @@ success :: Text -> IO ()
 success x = putChunkLn $ chunk x & fore green
 
 ngrok :: IO ()
-ngrok = shelly $ verbosely $ run "ngrok" ["start", "scalp-webhooks"] >>= (liftIO . info)
+ngrok = shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info)
 
 server :: TVar TopicResult -> IO ()
 server t = void $ concurrently ngrok $ do

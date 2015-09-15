@@ -17,7 +17,7 @@ import qualified Data.ByteString.Lazy        as L
 import           Data.Maybe
 import qualified Data.Text                   as T
 import qualified Network.Wreq                as W
-import           ScalpWebhooks               hiding (opts)
+import           Shelduck                    hiding (opts)
 import           System.Environment
 
 opts = do
