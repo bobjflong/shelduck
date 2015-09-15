@@ -1,16 +1,16 @@
-### Scalpel
+### scalp-webhooks
 
-Scalpel is a hybrid web-server/api-client. Its main use is as an opinionated tool for QAing webhooks on remote services.
+scalp-webhooks is a hybrid web-server/api-client. Its main use is as an opinionated tool for QAing webhooks on remote services.
 
-Scalpel is made up of a few concurrent components:
+scalp-webhooks is made up of a few concurrent components:
 
-* An [ngrok](https://ngrok.com/) client is used to forward a local service. Scalpel expects ngrok in your path, and a fixed ngrok url (requires a Pro account) with a configuration block like:
+* An [ngrok](https://ngrok.com/) client is used to forward a local service. scalp-webhooks expects ngrok in your path, and a fixed ngrok url (requires a Pro account) with a configuration block like:
 
 ```
 # ~/.ngrok2/ngrok.yml
 authtoken: foobarbaz
 tunnels:
-  scalpel:
+  scalp-webhooks:
     hostname: "yoururl.grok.io"
     proto: http
     addr: 8080
@@ -31,11 +31,11 @@ blank & requestEndpoint .~ "https://api.intercom.io/users"
 
 * A templater is used to splice in different attributes. For example {{random}} injects a random number.
 
-### Running Scalpel
+### Running scalp-webhooks
 
 Check out src/IntercomDefinitions.hs for some descriptions of [Intercom webhooks](https://doc.intercom.io/api/#webhooks-and-notifications).
 
-You can run Scalpel by concurrently starting the server and request engine:
+You can run scalp-webhooks by concurrently starting the server and request engine:
 
 ```haskell
 run :: TVar TopicResult -> IO ()
