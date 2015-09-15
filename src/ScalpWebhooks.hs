@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Scalpel (
+module ScalpWebhooks (
     requestTopic,
     requestEndpoint,
     requestOpts,
     requestParameters,
-    Scalpel.response,
+    ScalpWebhooks.response,
     timing,
     info,
     TopicResult,
