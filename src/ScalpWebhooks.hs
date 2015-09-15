@@ -117,7 +117,7 @@ success :: Text -> IO ()
 success x = putChunkLn $ chunk x & fore green
 
 ngrok :: IO ()
-ngrok = shelly $ verbosely $ run "ngrok" ["start", "scalpel"] >>= (liftIO . info)
+ngrok = shelly $ verbosely $ run "ngrok" ["start", "scalp-webhooks"] >>= (liftIO . info)
 
 server :: TVar TopicResult -> IO ()
 server t = void $ concurrently ngrok $ do

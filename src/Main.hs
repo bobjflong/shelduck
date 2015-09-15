@@ -7,7 +7,7 @@ import           System.Environment
 
 printUsage :: IO ()
 printUsage = mapM_ putStrLn usageLines
-  where usageLines = ["USAGE: scalpel <definition_type>", "Current definition_types: intercom"]
+  where usageLines = ["USAGE: scalp-webhooks <definition_type>", "Current definition_types: intercom"]
 
 main = do
   args <- getArgs
