@@ -29,7 +29,7 @@ blank & requestEndpoint .~ "https://api.intercom.io/users"
       & requestTopic .~ "user.created"
 ```
 
-* A templater is used to splice in different attributes. For example {{random}} injects a random number.
+* A templater is used to splice in different attributes. For example {{random}} injects a UUID.
 
 ### Running shelduck
 
