@@ -16,7 +16,7 @@ tunnels:
     addr: 8080
 ```
 
-This fixed ngrok URL is what you should use to create subscriptions to the service you are testing.
+This fixed ngrok URL is what you should use to create subscriptions in the service you are testing.
 
 * A web-service is run to catch and record incoming webhooks.
 
