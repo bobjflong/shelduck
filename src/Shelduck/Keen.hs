@@ -19,11 +19,11 @@ import           System.Environment
 opts = W.defaults & W.header "Accept" .~ ["application/json"]
                   & W.header "Content-Type" .~ ["application/json"]
 
-sendToKeen :: Text -> Bool -> MaybeT IO ()
+sendToKeen :: Text -> Bool -> IO ()
 sendToKeen t b = do
-  k <- lift keenEndpoint
+  k <- keenEndpoint
   case k of
-    Just k' -> lift $ void $ sendToKeen' t b k'
+    Just k' -> void $ sendToKeen' t b k'
     _ -> return ()
 
 sendToKeen' :: Text -> Bool -> String -> IO (W.Response L.ByteString)
