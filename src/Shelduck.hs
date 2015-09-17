@@ -86,7 +86,7 @@ doHandle w = ask >>=
       writeTVar t Nothing
       return b'
     pass <- handleSuccess b (w ^. requestTopic)
-    handleAnalytics b pass
+    handleAnalytics (w ^. requestTopic) pass
     return pass
 
 handleAnalytics :: Text -> Bool -> IO ()
