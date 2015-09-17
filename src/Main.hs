@@ -2,7 +2,7 @@ module Main (
   main
 )  where
 
-import           IntercomDefinitions
+import           Shelduck.IntercomDefinitions
 import           System.Environment
 
 printUsage :: IO ()

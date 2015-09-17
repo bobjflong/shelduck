@@ -1,4 +1,4 @@
-module Configuration where
+module Shelduck.Configuration where
 
 pollTime :: Int
 pollTime = 100000

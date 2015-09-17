@@ -17,7 +17,6 @@ module Shelduck (
     doHandle
   ) where
 
-import           Configuration
 import           Control.Concurrent
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
@@ -26,6 +25,7 @@ import           Control.Lens.TH
 import           Control.Monad
 import           Control.Monad.STM
 import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import           Data.Aeson.Lens
@@ -35,11 +35,13 @@ import           Data.Maybe
 import           Data.Monoid
 import           Data.Text
 import           Data.Text.Encoding
-import           Internal
 import qualified Network.Wreq                as W
 import           Rainbow
+import           Shelduck.Configuration
+import           Shelduck.Internal
+import           Shelduck.Keen
+import           Shelduck.Templating
 import           Shelly
-import           Templating
 import           Web.Spock.Safe
 
 data WebhookRequest = WebhookRequest {
@@ -79,11 +81,16 @@ doWait c x = ask >>=
 doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
 doHandle w = ask >>=
   \t -> lift $ do
-    b <- atomically $ do
+    b <- fmap (fromMaybe mempty) $ atomically $ do
       b' <- readTVar t
       writeTVar t Nothing
       return b'
-    handleSuccess (fromMaybe mempty b) (w ^. requestTopic)
+    pass <- handleSuccess b (w ^. requestTopic)
+    handleAnalytics b pass
+    return pass
+
+handleAnalytics :: Text -> Bool -> IO ()
+handleAnalytics t b = runMaybeT (sendToKeen t b) & void
 
 doLogTimings :: Int -> TimedResponse -> IO ()
 doLogTimings i t = void $ info $ mconcat ["Took approx: ", (pack . show) time, " microseconds..."]

@@ -19,8 +19,8 @@ source-repository head
   location: https://github.com/bobjflong/shelduck.git
 
 library
-  exposed-modules:     Shelduck, Templating, IntercomDefinitions, Internal
-  other-modules:       Configuration
+  exposed-modules:     Shelduck, Shelduck.Templating, Shelduck.IntercomDefinitions, Shelduck.Internal, Shelduck.Keen
+  other-modules:       Shelduck.Configuration
   build-depends:       base < 5
                        , Spock
                        , async

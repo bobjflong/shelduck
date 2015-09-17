@@ -6,11 +6,13 @@ import           Control.Concurrent.STM
 import           Control.Lens
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
+import           Data.Maybe
 import           Data.Text
-import           Internal
 import qualified Network.Wreq               as W
 import           Shelduck
-import           Templating
+import           Shelduck.Internal
+import           Shelduck.Templating
+import           System.Environment
 import           Test.Hspec
 import           Text.Regex
 
@@ -60,3 +62,9 @@ main = hspec $ do
       (i, t) <- pollingIO 10 r c f
       t `shouldBe` "Hello world"
       i `shouldBe` 0
+  describe "Keen" $
+    it "should construct Keen urls" $ do
+      setEnv "KEEN_PROJECT_ID" "foo"
+      setEnv "KEEN_API_KEY" "bar"
+      k <- keenEndpoint
+      fromJust k `shouldBe` "https://api.keen.io/3.0/projects/foo/events/shelduck?api_key=bar"
