@@ -86,11 +86,8 @@ doHandle w = ask >>=
       writeTVar t Nothing
       return b'
     pass <- handleSuccess b (w ^. requestTopic)
-    handleAnalytics (w ^. requestTopic) pass
+    sendToKeen (w ^. requestTopic) pass
     return pass
-
-handleAnalytics :: Text -> Bool -> IO ()
-handleAnalytics t b = runMaybeT (sendToKeen t b) & void
 
 doLogTimings :: Int -> TimedResponse -> IO ()
 doLogTimings i t = void $ info $ mconcat ["Took approx: ", (pack . show) time, " microseconds..."]
