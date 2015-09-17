@@ -81,13 +81,16 @@ doWait c x = ask >>=
 doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
 doHandle w = ask >>=
   \t -> lift $ do
-    b <- fmap (fromMaybe mempty) $ atomically $ do
-      b' <- readTVar t
-      writeTVar t Nothing
-      return b'
+    b <- fromMaybe mempty <$> atomically (readAndWipe t)
     pass <- handleSuccess b (w ^. requestTopic)
     sendToKeen (w ^. requestTopic) pass
     return pass
+
+readAndWipe :: TVar TopicResult ->  STM TopicResult
+readAndWipe t = do
+  b' <- readTVar t
+  writeTVar t Nothing
+  return b'
 
 doLogTimings :: Int -> TimedResponse -> IO ()
 doLogTimings i t = void $ info $ mconcat ["Took approx: ", (pack . show) time, " microseconds..."]
