@@ -25,7 +25,6 @@ sendToKeen t b = do
   case k of
     Just k' -> lift $ void $ sendToKeen' t b k'
     _ -> return ()
-  return ()
 
 sendToKeen' :: Text -> Bool -> String -> IO (W.Response L.ByteString)
 sendToKeen' t b k = W.postWith opts k (toJSON $ object ["type" .= t, "pass" .= b])
