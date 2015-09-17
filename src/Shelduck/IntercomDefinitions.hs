@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module IntercomDefinitions where
+module Shelduck.IntercomDefinitions where
 
 import           Control.Concurrent
 import           Control.Concurrent.Async

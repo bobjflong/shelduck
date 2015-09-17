@@ -62,3 +62,7 @@ runDefinitions = do
   concurrently (server r) (run r)
   return ()
 ```
+
+### Keen support
+
+Test runs are automatically sent to [Keen](https://keen.io/) if `KEEN_PROJECT_ID` and `KEEN_API_KEY` are set in your Env.

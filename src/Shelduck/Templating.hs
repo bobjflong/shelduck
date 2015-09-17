@@ -1,4 +1,4 @@
-module Templating where
+module Shelduck.Templating where
 
 import           Data.Text
 import           Data.Text.Lazy        (toStrict)
