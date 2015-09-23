@@ -83,7 +83,7 @@ doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
 doHandle w = ask >>=
   \t -> lift $ do
     b <- fromMaybe mempty <$> atomically (readAndWipe t)
-    pass <- handleSuccess b (w ^. requestTopic)
+    pass <- checkTopic b (w ^. requestTopic)
     sendToServices (w ^. requestTopic) pass
     return pass
 
@@ -113,8 +113,8 @@ performRequest w = doTemplating >>=
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
           return (w, e, p)
 
-handleSuccess :: Text -> Text -> IO Bool
-handleSuccess b t =
+checkTopic :: Text -> Text -> IO Bool
+checkTopic b t =
   if b == t
   then success (mconcat ["    Good topic: ", showResult b]) >> return True
   else failure (mconcat ["    Bad topic: ", showResult b]) >> return False
