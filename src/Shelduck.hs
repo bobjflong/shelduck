@@ -40,6 +40,7 @@ import           Rainbow
 import           Shelduck.Configuration
 import           Shelduck.Internal
 import           Shelduck.Keen
+import           Shelduck.Slack
 import           Shelduck.Templating
 import           Shelly
 import           Web.Spock.Safe
@@ -83,8 +84,13 @@ doHandle w = ask >>=
   \t -> lift $ do
     b <- fromMaybe mempty <$> atomically (readAndWipe t)
     pass <- handleSuccess b (w ^. requestTopic)
-    sendToKeen (w ^. requestTopic) pass
+    sendToServices (w ^. requestTopic) pass
     return pass
+
+sendToServices :: Text -> Bool -> IO ()
+sendToServices t b = do
+  sendToKeen t b
+  unless b $ sendToSlack t b
 
 readAndWipe :: TVar TopicResult ->  STM TopicResult
 readAndWipe t = do

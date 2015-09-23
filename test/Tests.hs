@@ -68,3 +68,7 @@ main = hspec $ do
       setEnv "KEEN_API_KEY" "bar"
       k <- keenEndpoint
       fromJust k `shouldBe` "https://api.keen.io/3.0/projects/foo/events/shelduck?api_key=bar"
+  describe "Slack" $
+    it "should encode Slack payloads" $ do
+      let report = SlackTestReport "foo" True
+      encode report `shouldBe` "{\"text\":\"Topic: foo, pass: True\"}"
