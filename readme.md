@@ -66,3 +66,7 @@ runDefinitions = do
 ### Keen support
 
 Test runs are automatically sent to [Keen](https://keen.io/) if `KEEN_PROJECT_ID` and `KEEN_API_KEY` are set in your Env.
+
+### Slack support
+
+Test failures are sent to Slack as a webhook if `SLACK_WEBHOOK_URL` is set in your Env.
