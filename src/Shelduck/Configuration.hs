@@ -4,4 +4,4 @@ pollTime :: Int
 pollTime = 100000
 
 polls :: Int
-polls = 1000
+polls = 2000
