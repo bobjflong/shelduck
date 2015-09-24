@@ -6,7 +6,7 @@ let
 
   f = { mkDerivation, aeson, async, base, bytestring, hastache
       , hspec, lens, lens-aeson, rainbow, random, regex-compat, shelly
-      , Spock, stdenv, stm, text, transformers, uuid, wreq
+      , Spock, stdenv, stm, text, time, transformers, uuid, wreq
       }:
       mkDerivation {
         pname = "shelduck";
@@ -16,11 +16,11 @@ let
         isExecutable = true;
         libraryHaskellDepends = [
           aeson async base bytestring hastache lens lens-aeson rainbow random
-          shelly Spock stm text transformers uuid wreq
+          shelly Spock stm text time transformers uuid wreq
         ];
         executableHaskellDepends = [
           aeson async base bytestring hastache lens lens-aeson rainbow random
-          shelly Spock stm text transformers uuid wreq
+          shelly Spock stm text time transformers uuid wreq
         ];
         testHaskellDepends = [
           aeson base hspec lens regex-compat stm text transformers wreq

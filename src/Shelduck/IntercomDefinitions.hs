@@ -16,15 +16,22 @@ import           Data.ByteString.Char8       (pack)
 import qualified Data.ByteString.Lazy        as L
 import           Data.Maybe
 import qualified Data.Text                   as T
+import           Data.Time.Clock.POSIX
+import           Data.UUID
+import           Data.UUID.V4
 import qualified Network.Wreq                as W
 import           Shelduck                    hiding (opts)
 import           System.Environment
 
 opts = do
+  timestamp <- round <$> getPOSIXTime
+  threadId <- toString <$> nextRandom
+  let xThreadId = mconcat ["id=\"", threadId, "\", timestamp=\"", show timestamp, "\""]
   appId <- getEnv "INTERCOM_APP_ID"
   appApiKey <- getEnv "INTERCOM_APP_API_KEY"
   return $ W.defaults & W.header "Accept" .~ ["application/json"]
                       & W.header "Content-Type" .~ ["application/json"]
+                      & W.header "X-TraceId" .~ [pack xThreadId]
                       & W.auth ?~ W.basicAuth (pack appId) (pack appApiKey)
 
 type DefinitionList = IO [WebhookRequest]
@@ -68,57 +75,68 @@ tagName = "foo"
 run :: TVar TopicResult -> IO ()
 run t = void $ do
   threadDelay 5000000
+
   options <- opts
   contactResp <- go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
                             & requestOpts .~ options
                             & requestParameters .~ object []
                             & requestTopic .~ "contact.created"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
              & requestOpts .~ options
              & requestParameters .~ object ["id" .= cid contactResp, "email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
              & requestTopic .~ "contact.added_email"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts/convert"
              & requestOpts .~ options
              & requestParameters .~ object ["contact" .= object ["id" .= cid contactResp], "user" .= object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]]
              & requestTopic .~ "contact.signed_up"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/users"
              & requestOpts .~ options
              & requestParameters .~ object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
              & requestTopic .~ "user.created"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/messages"
              & requestOpts .~ options
              & requestParameters .~ object ["from" .= object ["id" .= userId, "type" .= userType], "body" .= hi]
              & requestTopic .~ "conversation.user.created"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["intercom_user_id" .= userId, "body" .= hi, "type" .= userType, "message_type" .= commentType]
              & requestTopic .~ "conversation.user.replied"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= commentType]
              & requestTopic .~ "conversation.admin.replied"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= noteType]
              & requestTopic .~ "conversation.admin.noted"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "assignee_id" .= assigneeId, "body" .= hi, "type" .= adminType, "message_type" .= assignmentType]
              & requestTopic .~ "conversation.admin.assigned"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/tags"
              & requestOpts .~ options
              & requestParameters .~ object ["name" .= tagName, "users" .= [object ["id" .= userId]]]
              & requestTopic .~ "user.tag.created"
 
+  options <- opts
   go $ blank & requestEndpoint .~ "https://api.intercom.io/tags"
              & requestOpts .~ options
              & requestParameters .~ object ["name" .= tagName, "users" .= [object ["untag" .= True, "id" .= userId]]]
