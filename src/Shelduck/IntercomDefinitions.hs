@@ -42,6 +42,9 @@ type DefinitionList = IO [WebhookRequest]
 userId :: T.Text
 userId = "55b26822ce97179e52001334"
 
+userEmail :: T.Text
+userEmail = "bob+testuser17@intercom.io"
+
 userType :: T.Text
 userType = "user"
 
@@ -72,9 +75,19 @@ hi = "Hi :)"
 tagName :: T.Text
 tagName = "foo"
 
+eventName :: T.Text
+eventName = "shelduck-test-event"
+
 run :: TVar TopicResult -> IO ()
 run t = void $ do
   threadDelay 5000000
+
+  options <- opts
+  eventTimestamp <- round <$> getPOSIXTime
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/events"
+             & requestOpts .~ options
+             & requestParameters .~ object ["email" .= userEmail, "event_name" .= eventName, "created_at" .= (eventTimestamp :: Integer)]
+             & requestTopic .~ "event.created"
 
   options <- opts
   contactResp <- go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
