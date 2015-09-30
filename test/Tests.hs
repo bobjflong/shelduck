@@ -18,11 +18,6 @@ import           Text.Regex
 
 main :: IO ()
 main = hspec $ do
-  describe "templating" $
-    it "substitutes random numbers at runtime" $ do
-      let regex = mkRegex "{\"foo\":\"bar[0-9a-zA-Z\\-]+\"}"
-      t <- template "{\"foo\":\"bar{{random}}\"}"
-      matchRegex regex (unpack t) `shouldBe` Just []
   describe "reading results" $ do
     it "detects success" $ do
       r <- newTVarIO (Just "foo") :: IO (TVar TopicResult)
