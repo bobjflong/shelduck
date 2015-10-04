@@ -65,6 +65,7 @@ data TimedResponse = TimedResponse {
 $(makeLenses ''TimedResponse)
 
 type TopicResult = Maybe Text
+type Topic = Text
 
 doPost :: (WebhookRequest, Text, Text) -> ReaderT a IO (W.Response L.ByteString)
 doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
@@ -87,7 +88,7 @@ doHandle w = ask >>=
     sendToServices (w ^. requestTopic) pass
     return pass
 
-sendToServices :: Text -> Bool -> IO ()
+sendToServices :: Topic -> Bool -> IO ()
 sendToServices t b = do
   sendToKeen t b
   unless b $ sendToSlack t b
@@ -113,7 +114,7 @@ performRequest w = doTemplating >>=
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
           return (w, e, p)
 
-checkTopic :: Text -> Text -> IO Bool
+checkTopic :: Topic -> Topic -> IO Bool
 checkTopic b t =
   if b == t
   then success (mconcat ["    Good topic: ", showResult b]) >> return True
