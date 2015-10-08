@@ -1,18 +1,49 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Shelduck.Internal where
 
 import           Control.Concurrent
 import           Control.Concurrent.STM.TVar
+import           Control.Lens                hiding ((.=))
+import           Control.Lens.TH
+import           Control.Monad
 import           Control.Monad.STM
+import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import           Data.Text
+import qualified Network.Wreq                as W
+import           Rainbow
 import           Shelduck.Configuration
 import           System.Environment
 
+data WebhookRequest = WebhookRequest {
+  _requestEndpoint   :: Text,
+  _requestOpts       :: W.Options,
+  _requestParameters :: Value,
+  _requestTopic      :: Text
+}
+
+blank :: WebhookRequest
+blank = WebhookRequest mempty W.defaults (object []) mempty
+
+$(makeLenses ''WebhookRequest)
+
+type TopicResult = Maybe Text
+type RequestData = (WebhookRequest, Text, Text)
+
 record :: Maybe Text -> TVar (Maybe Text) -> IO ()
 record t r = atomically $ writeTVar r t
+
+doRetry :: RequestData -> (RequestData -> ReaderT (TVar TopicResult) IO b) -> ReaderT (TVar TopicResult) IO ()
+doRetry r c = ask >>=
+  \t -> do
+    currentResult <- lift $ atomically (readTVar t)
+    case currentResult of
+      Nothing -> lift (info "Retrying...") >> c r >> void (lift $ threadDelay retryWait)
+      _ -> return ()
 
 pollingIO :: Int -> TVar a -> (TVar a -> IO Bool) -> IO b -> IO (Int, b)
 pollingIO c t x i = temporaryFailure >>= \f -> if f then tryAgain else finish
@@ -38,3 +69,12 @@ data SlackTestReport = SlackTestReport {
 
 instance ToJSON SlackTestReport where
   toJSON SlackTestReport{..} = object ["text" .= mconcat ["Topic: ", topic, ", pass: ", (pack . show) pass]]
+
+failure :: Text -> IO ()
+failure x = putChunkLn $ chunk x & fore red
+
+info :: Text -> IO ()
+info x = putChunkLn $ chunk x & fore cyan
+
+success :: Text -> IO ()
+success x = putChunkLn $ chunk x & fore green
