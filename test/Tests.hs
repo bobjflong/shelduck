@@ -4,17 +4,16 @@ module Main where
 
 import           Control.Concurrent.STM
 import           Control.Lens
+import           Control.Monad
+import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import           Data.Maybe
-import           Data.Text
 import qualified Network.Wreq               as W
 import           Shelduck
 import           Shelduck.Internal
-import           Shelduck.Templating
 import           System.Environment
 import           Test.Hspec
-import           Text.Regex
 
 main :: IO ()
 main = hspec $ do
@@ -37,6 +36,23 @@ main = hspec $ do
           handler = doHandle req
       result <- runReaderT handler r
       result `shouldBe` False
+  describe "retries" $ do
+    it "works" $ do
+      r <- newTVarIO Nothing :: IO (TVar TopicResult)
+      let requestData = (blank, mempty, mempty)
+          continue :: RequestData -> ReaderT (TVar TopicResult) IO ()
+          continue _ = void $ lift (atomically $ writeTVar r (Just "done"))
+      runReaderT (doRetry requestData continue) r
+      result <- readTVarIO r
+      result `shouldBe` Just "done"
+    it "does not retry unnecessarily" $ do
+      r <- newTVarIO (Just "untouched") :: IO (TVar TopicResult)
+      let requestData = (blank, mempty, mempty)
+          continue :: RequestData -> ReaderT (TVar TopicResult) IO ()
+          continue _ = void $ lift (atomically $ writeTVar r (Just "done"))
+      runReaderT (doRetry requestData continue) r
+      result <- readTVarIO r
+      result `shouldBe` Just "untouched"
   describe "writing results" $
     it "works" $ do
       r <- newTVarIO Nothing :: IO (TVar TopicResult)

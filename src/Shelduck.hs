@@ -36,7 +36,6 @@ import           Data.Monoid
 import           Data.Text
 import           Data.Text.Encoding
 import qualified Network.Wreq                as W
-import           Rainbow
 import           Shelduck.Configuration
 import           Shelduck.Internal
 import           Shelduck.Keen
@@ -45,18 +44,6 @@ import           Shelduck.Templating
 import           Shelly
 import           Web.Spock.Safe
 
-data WebhookRequest = WebhookRequest {
-  _requestEndpoint   :: Text,
-  _requestOpts       :: W.Options,
-  _requestParameters :: Value,
-  _requestTopic      :: Text
-}
-
-blank :: WebhookRequest
-blank = WebhookRequest mempty W.defaults (object []) mempty
-
-$(makeLenses ''WebhookRequest)
-
 data TimedResponse = TimedResponse {
   _response :: W.Response L.ByteString,
   _timing   :: Int
@@ -64,20 +51,19 @@ data TimedResponse = TimedResponse {
 
 $(makeLenses ''TimedResponse)
 
-type TopicResult = Maybe Text
 type Topic = Text
 
-doPost :: (WebhookRequest, Text, Text) -> ReaderT a IO (W.Response L.ByteString)
+doPost :: RequestData -> ReaderT a IO (W.Response L.ByteString)
 doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
 
 doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
 doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) >> return r
 
-doWait :: Int -> W.Response L.ByteString -> ReaderT (TVar TopicResult) IO TimedResponse
-doWait c x = ask >>=
-  \t -> lift $ do
-    (c, r) <- pollingIO c t predicate (return x)
-    return $ TimedResponse r c
+doWait :: RequestData -> Int -> W.Response L.ByteString -> ReaderT (TVar TopicResult) IO TimedResponse
+doWait d c x = do
+  t <- ask
+  (c, r) <- lift $ pollingIO c t predicate (return x)
+  doRetry d doPost >> return (TimedResponse r c)
   where predicate t = fmap isJust (readTVarIO t)
 
 doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
@@ -104,11 +90,13 @@ doLogTimings i t = void $ info $ mconcat ["Took approx: ", (pack . show) time, "
   where time = (i - (t ^. timing)) * pollTime
 
 performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO TimedResponse
-performRequest w = doTemplating >>=
-                   doPost >>=
+performRequest w = doTemplating >>= \req ->
+                   doPost req >>=
                    doLog >>=
-                   doWait polls >>=
-                   (\x -> lift (doLogTimings polls x) >> doHandle w >> return x)
+                   doWait req polls >>=
+                   (\x ->
+                     lift (doLogTimings polls x) >>
+                     doHandle w >> return x)
   where doTemplating = lift $ do
           e <- template (w ^. requestEndpoint)
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
@@ -120,15 +108,6 @@ checkTopic b t =
   then success (mconcat ["    Good topic: ", showResult b]) >> return True
   else failure (mconcat ["    Bad topic: ", showResult b]) >> return False
   where showResult = pack . show
-
-failure :: Text -> IO ()
-failure x = putChunkLn $ chunk x & fore red
-
-info :: Text -> IO ()
-info x = putChunkLn $ chunk x & fore cyan
-
-success :: Text -> IO ()
-success x = putChunkLn $ chunk x & fore green
 
 ngrok :: IO ()
 ngrok = shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info)
