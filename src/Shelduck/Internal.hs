@@ -13,9 +13,9 @@ import           Control.Monad.STM
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
+import qualified Data.ByteString.Lazy        as BL
 import           Data.Text
 import qualified Network.Wreq                as W
-import           Rainbow
 import           Shelduck.Configuration
 import           System.Environment
 
@@ -70,11 +70,5 @@ data SlackTestReport = SlackTestReport {
 instance ToJSON SlackTestReport where
   toJSON SlackTestReport{..} = object ["text" .= mconcat ["Topic: ", topic, ", pass: ", (pack . show) pass]]
 
-failure :: Text -> IO ()
-failure x = putChunkLn $ chunk x & fore red
-
-info :: Text -> IO ()
-info x = putChunkLn $ chunk x & fore cyan
-
-success :: Text -> IO ()
-success x = putChunkLn $ chunk x & fore green
+info :: Value -> IO ()
+info = BL.putStrLn . encode

@@ -30,7 +30,6 @@ library
                        , stm
                        , wreq
                        , aeson
-                       , rainbow
                        , hastache
                        , random
                        , bytestring
@@ -53,7 +52,6 @@ executable shelduck
                        , stm
                        , wreq
                        , aeson
-                       , rainbow
                        , hastache
                        , random
                        , bytestring
