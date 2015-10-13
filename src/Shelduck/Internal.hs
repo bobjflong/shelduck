@@ -13,7 +13,7 @@ import           Control.Monad.STM
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
-import qualified Data.ByteString.Lazy        as BL
+import qualified Data.ByteString.Lazy.Char8  as BL
 import           Data.Text
 import qualified Network.Wreq                as W
 import           Shelduck.Configuration
