@@ -57,7 +57,8 @@ doPost :: RequestData -> ReaderT a IO (W.Response L.ByteString)
 doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
 
 doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
-doLog r = lift ((info . pack . show) (r ^. W.responseStatus)) >> return r
+doLog r = lift ((info . json . pack . show) (r ^. W.responseStatus)) >> return r
+  where json s = object ["status" .= s]
 
 doWait :: RequestData -> Int -> W.Response L.ByteString -> ReaderT (TVar TopicResult) IO TimedResponse
 doWait d c x = do
@@ -86,7 +87,7 @@ readAndWipe t = do
   return b'
 
 doLogTimings :: Int -> TimedResponse -> IO ()
-doLogTimings i t = void $ info $ mconcat ["Took approx: ", (pack . show) time, " microseconds..."]
+doLogTimings i t = void $ info $ object ["duration" .= time]
   where time = (i - (t ^. timing)) * pollTime
 
 performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO TimedResponse
@@ -105,12 +106,13 @@ performRequest w = doTemplating >>= \req ->
 checkTopic :: Topic -> Topic -> IO Bool
 checkTopic b t =
   if b == t
-  then success (mconcat ["    Good topic: ", showResult b]) >> return True
-  else failure (mconcat ["    Bad topic: ", showResult b]) >> return False
+  then info (object ["good_topic" .= showResult b]) >> return True
+  else info (object ["bad_topic" .= showResult b]) >> return False
   where showResult = pack . show
 
 ngrok :: IO ()
-ngrok = shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info)
+ngrok = shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info . json)
+  where json x = object ["ngrok_message" .= x]
 
 server :: TVar TopicResult -> IO ()
 server t = void $ concurrently ngrok $ do
