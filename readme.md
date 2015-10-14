@@ -4,7 +4,7 @@ shelduck is a hybrid web-server/api-client. Its main use is as an opinionated to
 
 shelduck is made up of a few concurrent components:
 
-* An [ngrok](https://ngrok.com/) client is used to forward a local service. shelduck expects ngrok in your path, and a fixed ngrok url (requires a Pro account) with a configuration block like:
+* An [ngrok](https://ngrok.com/) client is used to forward a local service. shelduck expects ngrok in your path, and a fixed ngrok url (requires a paid account) with a configuration block like:
 
 ```
 # ~/.ngrok2/ngrok.yml
