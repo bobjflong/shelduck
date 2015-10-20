@@ -17,22 +17,18 @@ module Shelduck (
     doHandle
   ) where
 
-import           Control.Concurrent
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
-import           Control.Lens.TH
 import           Control.Monad
 import           Control.Monad.STM
 import           Control.Monad.Trans.Class
-import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.ByteString.Lazy        (toStrict)
 import qualified Data.ByteString.Lazy        as L
 import           Data.Maybe
-import           Data.Monoid
 import           Data.Text
 import           Data.Text.Encoding
 import qualified Network.Wreq                as W
@@ -123,6 +119,6 @@ server t = void $ concurrently ngrok $ do
                        let topic  = responseBody ^? key "topic"
                        lift $ case topic of
                          Just (String s) -> record (Just s) t
-                         Nothing -> record Nothing t
+                         _ -> record Nothing t
                        r <- lift $ readTVarIO t
                        text $ r & (pack . show)

@@ -7,7 +7,6 @@ module Shelduck.Internal where
 import           Control.Concurrent
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
-import           Control.Lens.TH
 import           Control.Monad
 import           Control.Monad.STM
 import           Control.Monad.Trans.Class

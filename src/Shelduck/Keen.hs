@@ -6,16 +6,13 @@ module Shelduck.Keen (
 
 import           Control.Lens              hiding ((.=))
 import           Control.Monad             (void)
-import           Control.Monad.Trans.Class
-import           Control.Monad.Trans.Maybe
 import           Data.Aeson
 import qualified Data.ByteString.Lazy      as L
 import           Data.Text
-import           Data.Traversable
 import           Shelduck.Internal
 import qualified Network.Wreq              as W
-import           System.Environment
 
+opts :: W.Options
 opts = W.defaults & W.header "Accept" .~ ["application/json"]
                   & W.header "Content-Type" .~ ["application/json"]
 
