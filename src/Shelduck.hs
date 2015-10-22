@@ -56,7 +56,7 @@ doPost (w, e, p) = lift $ do
   where json x = object ["endpoint" .= x, "params" .= (w ^. requestOpts . W.params)]
 
 doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
-doLog r = lift ((info . json . pack . show) (r ^. W.responseStatus)) >> return r
+doLog r = lift ((info . json . pack . show) (r ^. W.responseStatus . W.statusCode)) >> return r
   where json s = object ["status" .= s]
 
 doWait :: RequestData -> Int -> W.Response L.ByteString -> ReaderT (TVar TopicResult) IO TimedResponse
