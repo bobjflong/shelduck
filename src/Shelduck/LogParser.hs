@@ -32,7 +32,7 @@ instance Show LogLineAction where
 verb :: LogLine -> LogLineAction
 verb (UnParseable b) = UnknownAction b
 verb (Data l) = resolve logDictionary
- where logDictionary = [ lookup "payload" l >> pure PostRequestMade
+ where logDictionary = [ lookup "params" l >> pure PostRequestMade
                        , lookup "status" l >> pure PostResponseReceived
                        , lookup "duration" l >> pure RoundTrip
                        , lookup "good_topic" l >> pure CorrectTopicReceived

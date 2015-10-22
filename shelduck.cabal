@@ -19,7 +19,7 @@ source-repository head
   location: https://github.com/bobjflong/shelduck.git
 
 library
-  exposed-modules:     Shelduck, Shelduck.Templating, Shelduck.IntercomDefinitions, Shelduck.Internal, Shelduck.Keen, Shelduck.Slack, Shelduck.LogParser
+  exposed-modules:     Shelduck, Shelduck.Templating, Shelduck.IntercomDefinitions, Shelduck.Internal, Shelduck.Keen, Shelduck.Slack, Shelduck.LogParser, Shelduck.WebApp
   other-modules:       Shelduck.Configuration
   build-depends:       base < 5
                        , Spock
@@ -38,6 +38,8 @@ library
                        , uuid
                        , time
                        , unordered-containers
+                       , yesod
+                       , directory
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -61,6 +63,8 @@ executable shelduck
                        , uuid
                        , time
                        , unordered-containers
+                       , yesod
+                       , directory
   hs-source-dirs:      src
   default-language:    Haskell2010
 

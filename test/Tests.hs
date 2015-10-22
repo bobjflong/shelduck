@@ -86,7 +86,7 @@ main = hspec $ do
       encode report `shouldBe` "{\"text\":\"Topic: foo, pass: True\"}"
   describe "Log parsing" $
     it "should calculate verbs" $ do
-      let logLine = toLogLine "{\"payload\":\"foo\"}"
+      let logLine = toLogLine "{\"params\":\"foo\"}"
       (show . verb) logLine `shouldBe` "post request made"
       let logLine = toLogLine "{\"bad\": "
       (show . verb) logLine `shouldBe` "unknown action: \"{\\\"bad\\\": \""
