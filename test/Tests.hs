@@ -12,9 +12,9 @@ import           Data.Maybe
 import qualified Network.Wreq               as W
 import           Shelduck
 import           Shelduck.Internal
+import           Shelduck.LogParser
 import           System.Environment
 import           Test.Hspec
-import Shelduck.LogParser
 
 main :: IO ()
 main = hspec $ do
