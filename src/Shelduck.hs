@@ -50,7 +50,10 @@ $(makeLenses ''TimedResponse)
 type Topic = Text
 
 doPost :: RequestData -> ReaderT a IO (W.Response L.ByteString)
-doPost (w, e, p) = lift $ W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
+doPost (w, e, p) = lift $ do
+  (info . json) e
+  W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
+  where json x = object ["endpoint" .= x, "params" .= (w ^. requestOpts . W.params)]
 
 doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
 doLog r = lift ((info . json . pack . show) (r ^. W.responseStatus)) >> return r
