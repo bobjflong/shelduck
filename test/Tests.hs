@@ -14,6 +14,7 @@ import           Shelduck
 import           Shelduck.Internal
 import           System.Environment
 import           Test.Hspec
+import Shelduck.LogParser
 
 main :: IO ()
 main = hspec $ do
@@ -83,3 +84,11 @@ main = hspec $ do
     it "should encode Slack payloads" $ do
       let report = SlackTestReport "foo" True
       encode report `shouldBe` "{\"text\":\"Topic: foo, pass: True\"}"
+  describe "Log parsing" $
+    it "should calculate verbs" $ do
+      let logLine = toLogLine "{\"payload\":\"foo\"}"
+      (show . verb) logLine `shouldBe` "post request made"
+      let logLine = toLogLine "{\"bad\": "
+      (show . verb) logLine `shouldBe` "unknown action: \"{\\\"bad\\\": \""
+      let logLine = toLogLine "{\"foo\":\"bar\"}"
+      (show . verb) logLine `shouldBe` "log line contained no action"
