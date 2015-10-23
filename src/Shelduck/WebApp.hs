@@ -6,12 +6,12 @@
 module Shelduck.WebApp (webAppServer) where
 
 import           Data.Aeson.Encode.Pretty
-import           Data.ByteString.Lazy       (toStrict)
-import qualified Data.ByteString.Lazy.Char8 as BL
-import           Data.HashMap.Strict        hiding (filter)
-import           Data.Text.Encoding         (decodeUtf8)
+import           Data.ByteString.Lazy     (toStrict)
+import           Data.Text                (pack, splitOn)
+import           Data.Text.Encoding       (decodeUtf8)
 import           Shelduck.Internal
 import           Shelduck.LogParser
+import           Shelly
 import           Yesod
 
 data App = App
@@ -50,8 +50,8 @@ filterKnown = filter (knownLog . verb)
 tailLog :: IO [LogLine]
 tailLog = do
   log <- logFile
-  logData <- BL.readFile log
-  return $ (take 100 . filterKnown . fmap toLogLine . reverse . BL.split '\n') logData
+  logData <- shelly $ verbosely $ run "tail" ["-100", pack log]
+  return $ (filterKnown . fmap toLogLine . reverse . splitOn "\n") logData
 
 getHomeR :: Handler Html
 getHomeR = defaultLayout $ do

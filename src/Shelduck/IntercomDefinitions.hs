@@ -7,14 +7,11 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
 import           Control.Monad
-import           Control.Monad.STM
 import           Control.Monad.Trans.Reader
 import           Data.Aeson                  (object, (.=))
 import           Data.Aeson.Lens             as AL
-import           Data.ByteString             hiding (getLine, pack)
 import           Data.ByteString.Char8       (pack)
 import qualified Data.ByteString.Lazy        as L
-import           Data.Maybe
 import qualified Data.Text                   as T
 import           Data.Time.Clock.POSIX
 import           Data.UUID
