@@ -9,15 +9,16 @@ import           Data.HashMap.Strict
 import           Data.Maybe
 import qualified Data.Text            as T
 import           Prelude              hiding (lookup)
+import Data.Text.Encoding
 
-data LogLine = Data (HashMap T.Text Value) | UnParseable ByteString
+data LogLine = Data (HashMap T.Text Value) | UnParseable T.Text
 
 data LogLineAction = PostRequestMade
                      | PostResponseReceived
                      | RoundTrip
                      | CorrectTopicReceived
                      | IncorrectTopicReceived
-                     | UnknownAction ByteString
+                     | UnknownAction T.Text
                      | NoAction
 
 instance Show LogLineAction where
@@ -42,7 +43,7 @@ verb (Data l) = resolve logDictionary
 resolve :: [Maybe LogLineAction] -> LogLineAction
 resolve x = catMaybes x ^? ix 0 & fromMaybe NoAction
 
-toLogLine :: ByteString -> LogLine
-toLogLine x = case decode x of
+toLogLine :: T.Text -> LogLine
+toLogLine x = case decode ((fromStrict . encodeUtf8) x) of
                 Nothing -> UnParseable x
                 (Just p) -> Data p
