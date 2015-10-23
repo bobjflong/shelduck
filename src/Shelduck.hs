@@ -53,7 +53,7 @@ doPost :: RequestData -> ReaderT a IO (W.Response L.ByteString)
 doPost (w, e, p) = lift $ do
   (info . json) e
   W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
-  where json x = object ["endpoint" .= x, "params" .= (w ^. requestOpts . W.params & show)]
+  where json x = object ["endpoint" .= x, "params" .= p, "headers" .= (w ^. requestOpts . W.headers & show)]
 
 doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
 doLog r = lift ((info . json . pack . show) (r ^. W.responseStatus . W.statusCode)) >> return r

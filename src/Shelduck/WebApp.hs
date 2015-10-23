@@ -3,12 +3,15 @@
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 
-module Shelduck.WebApp where
+module Shelduck.WebApp (webAppServer) where
 
+import           Data.Aeson.Encode.Pretty
+import           Data.ByteString.Lazy       (toStrict)
 import qualified Data.ByteString.Lazy.Char8 as BL
-import           Data.HashMap.Strict
+import           Data.HashMap.Strict        hiding (filter)
+import           Data.Text.Encoding         (decodeUtf8)
+import           Shelduck.Internal
 import           Shelduck.LogParser
-import           System.Directory
 import           Yesod
 
 data App = App
@@ -31,18 +34,28 @@ style = [lucius|
     margin: 5em 0em 0em;
     padding: 5em 0em;
   }
+  pre {
+    white-space: pre-wrap;
+    font-size: 10px;
+    background: #f9f9f9;
+  }
 |]
 
-tailLog :: IO [BL.ByteString]
+filterKnown :: [LogLine] -> [LogLine]
+filterKnown = filter (knownLog . verb)
+  where knownLog (UnknownAction _) = False
+        knownLog NoAction = False
+        knownLog _ = True
+
+tailLog :: IO [LogLine]
 tailLog = do
-  home <- getHomeDirectory
-  file <- BL.readFile (mconcat [home, "/shelduck.log"])
-  return $ (take 100 . reverse . BL.split '\n') file
+  log <- logFile
+  logData <- BL.readFile log
+  return $ (take 100 . filterKnown . fmap toLogLine . reverse . BL.split '\n') logData
 
 getHomeR :: Handler Html
 getHomeR = defaultLayout $ do
-  logData <- liftIO tailLog
-  let logs = fmap toLogLine logData
+  logs <- liftIO tailLog
   addScriptRemote "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.js"
   addScriptRemote "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.js"
   addStylesheetRemote "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.css"
@@ -61,24 +74,18 @@ getHomeR = defaultLayout $ do
 
       <div class="ui relaxed divided list">
         $forall log <- logs
-          $case (verb log)
-             $of UnknownAction _
-               <div>
-             $of NoAction
-               <div>
-             $of _
-               <div class="item">
-                 <div class="content">
-                   <a class="header">#{(show . verb) log}
-                   <div class="description">
-                     <pre>
-                       $case log
-                         $of Data h
-                           #{(show . toList) h}
-                         $of _
-                           <div>
+          <div class="item">
+            <div class="content">
+              <a class="header">#{(show . verb) log}
+              <div class="description">
+                <pre>
+                  $case log
+                    $of Data h
+                      #{(decodeUtf8 . toStrict) (encodePretty h)}
+                    $of _
+                      <div>
   |]
   return ()
 
-server :: IO ()
-server = warp 4567 App
+webAppServer :: IO ()
+webAppServer = warp 4567 App

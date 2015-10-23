@@ -3,7 +3,9 @@ module Main (
 )  where
 
 import           Control.Concurrent
+import           Control.Concurrent.Async
 import           Shelduck.IntercomDefinitions
+import           Shelduck.WebApp
 import           System.Environment
 
 printUsage :: IO ()
@@ -18,6 +20,8 @@ runIntercomDefinitionsFromCommandLine intercomArgs =
 
 main = do
   args <- getArgs
-  case args of
-    ("intercom":args) -> runIntercomDefinitionsFromCommandLine args
-    _ -> printUsage
+  withAsync webAppServer $ \app -> do
+    case args of
+      ("intercom":args) -> runIntercomDefinitionsFromCommandLine args
+      _ -> printUsage
+    wait app

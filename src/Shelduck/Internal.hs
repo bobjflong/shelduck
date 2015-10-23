@@ -16,6 +16,7 @@ import qualified Data.ByteString.Lazy.Char8  as BL
 import           Data.Text
 import qualified Network.Wreq                as W
 import           Shelduck.Configuration
+import           System.Directory
 import           System.Environment
 
 data WebhookRequest = WebhookRequest {
@@ -27,6 +28,11 @@ data WebhookRequest = WebhookRequest {
 
 blank :: WebhookRequest
 blank = WebhookRequest mempty W.defaults (object []) mempty
+
+logFile :: IO FilePath
+logFile = do
+  home <- getHomeDirectory
+  return $ mconcat [home, "/shelduck.log"]
 
 $(makeLenses ''WebhookRequest)
 
@@ -70,4 +76,6 @@ instance ToJSON SlackTestReport where
   toJSON SlackTestReport{..} = object ["text" .= mconcat ["Topic: ", topic, ", pass: ", (pack . show) pass]]
 
 info :: Value -> IO ()
-info = BL.putStrLn . encode
+info v = do
+  file <- logFile
+  BL.appendFile file (mconcat [encode v, "\n"])
