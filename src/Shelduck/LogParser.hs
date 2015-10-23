@@ -19,6 +19,7 @@ data LogLineAction = PostRequestMade
                      | CorrectTopicReceived
                      | IncorrectTopicReceived
                      | UnknownAction T.Text
+                     | Retry
                      | NoAction
 
 instance Show LogLineAction where
@@ -27,6 +28,7 @@ instance Show LogLineAction where
   show RoundTrip = "finished waiting for webhook"
   show CorrectTopicReceived = "correct topic received"
   show IncorrectTopicReceived = "incorrect topic received"
+  show Retry = "retry performed"
   show (UnknownAction b) = mconcat ["unknown action: ", show b]
   show NoAction = "log line contained no action"
 
@@ -38,6 +40,7 @@ verb (Data l) = resolve logDictionary
                        , lookup "duration" l >> pure RoundTrip
                        , lookup "good_topic" l >> pure CorrectTopicReceived
                        , lookup "bad_topic" l >> pure IncorrectTopicReceived
+                       , lookup "retry" l >> pure Retry
                        ]
 
 resolve :: [Maybe LogLineAction] -> LogLineAction

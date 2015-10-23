@@ -88,6 +88,8 @@ main = hspec $ do
     it "should calculate verbs" $ do
       let logLine = toLogLine "{\"params\":\"foo\"}"
       (show . verb) logLine `shouldBe` "post request made"
+      let logLine = toLogLine "{\"retry\":true}"
+      (show . verb) logLine `shouldBe` "retry performed"
       let logLine = toLogLine "{\"bad\": "
       (show . verb) logLine `shouldBe` "unknown action: \"{\\\"bad\\\": \""
       let logLine = toLogLine "{\"foo\":\"bar\"}"
