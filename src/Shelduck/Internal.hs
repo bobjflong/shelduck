@@ -49,8 +49,9 @@ doRetry r c = ask >>=
   \t -> do
     currentResult <- lift $ atomically (readTVar t)
     case currentResult of
-      Nothing -> lift (info "Retrying...") >> c r >> void (lift $ threadDelay retryWait)
+      Nothing -> lift (info jsonRetry) >> c r >> void (lift $ threadDelay retryWait)
       _ -> return ()
+    where jsonRetry = object ["retry" .= True]
 
 pollingIO :: Int -> TVar a -> (TVar a -> IO Bool) -> IO b -> IO (Int, b)
 pollingIO c t x i = temporaryFailure >>= \f -> if f then tryAgain else finish
