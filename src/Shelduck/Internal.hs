@@ -13,7 +13,9 @@ import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8  as BL
+import           Data.HashMap.Strict
 import           Data.Text
+import           Data.Time.Clock.POSIX
 import qualified Network.Wreq                as W
 import           Shelduck.Configuration
 import           System.Directory
@@ -76,6 +78,12 @@ instance ToJSON SlackTestReport where
   toJSON SlackTestReport{..} = object ["text" .= mconcat ["Topic: ", topic, ", pass: ", (pack . show) pass]]
 
 info :: Value -> IO ()
+info (Object o) = do
+  time <- round <$> getPOSIXTime
+  file <- logFile
+  BL.appendFile file (mconcat [encode (withTimestamp time), "\n"])
+  where withTimestamp t = Object $ insert "_timestamp" (jsonString t) o
+        jsonString = String . pack . show
 info v = do
   file <- logFile
   BL.appendFile file (mconcat [encode v, "\n"])
