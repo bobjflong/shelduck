@@ -23,7 +23,7 @@ data LogLineAction = PostRequestMade
 instance Show LogLineAction where
   show PostRequestMade = "post request made"
   show PostResponseReceived = "post response received"
-  show RoundTrip = "round trip detected"
+  show RoundTrip = "finished waiting for webhook"
   show CorrectTopicReceived = "correct topic received"
   show IncorrectTopicReceived = "incorrect topic received"
   show (UnknownAction b) = mconcat ["unknown action: ", show b]
