@@ -25,7 +25,7 @@ main = hspec $ do
                       & requestOpts .~ W.defaults
                       & requestParameters .~ object []
                       & requestTopic .~ "foo"
-          handler = doHandle req
+          handler = checkAssertion req
       result <- runReaderT handler r
       result `shouldBe` True
     it "detects failures" $ do
@@ -34,7 +34,7 @@ main = hspec $ do
                       & requestOpts .~ W.defaults
                       & requestParameters .~ object []
                       & requestTopic .~ "foo"
-          handler = doHandle req
+          handler = checkAssertion req
       result <- runReaderT handler r
       result `shouldBe` False
   describe "retries" $ do

@@ -28,6 +28,8 @@ data WebhookRequest = WebhookRequest {
   _requestTopic      :: Text
 }
 
+$(makeLenses ''WebhookRequest)
+
 blank :: WebhookRequest
 blank = WebhookRequest mempty W.defaults (object []) mempty
 
@@ -35,8 +37,6 @@ logFile :: IO FilePath
 logFile = do
   home <- getHomeDirectory
   return $ mconcat [home, "/shelduck.log"]
-
-$(makeLenses ''WebhookRequest)
 
 type TopicResult = Maybe Text
 type RequestData = (WebhookRequest, Text, Text)
@@ -54,8 +54,9 @@ doRetry r c = ask >>=
     where jsonRetry = object ["retry" .= True]
 
 pollingIO :: Int -> TVar a -> (TVar a -> IO Bool) -> IO b -> IO (Int, b)
-pollingIO c t x i = temporaryFailure >>= \f -> if f then tryAgain else finish
-  where tryAgain = threadDelay pollTime >> pollingIO (c - 1) t x i
+pollingIO c t x i = temporaryFailure >>= continue
+  where continue f = if f then tryAgain else finish
+        tryAgain = threadDelay pollTime >> pollingIO (c - 1) t x i
         finish = i >>= \result -> return (c, result)
         temporaryFailure = x t >>= \p -> return $ not p && c > 0
 
@@ -64,11 +65,11 @@ keenEndpoint = do
   p <- lookupEnv "KEEN_PROJECT_ID"
   a <- lookupEnv "KEEN_API_KEY"
   return $ do
-    base <- Just "https://api.keen.io/3.0/projects/"
+    base <- pure "https://api.keen.io/3.0/projects/"
     p' <- p
-    middle <- Just "/events/shelduck?api_key="
+    middle <- pure "/events/shelduck?api_key="
     a' <- a
-    return $ base ++ p' ++ middle ++ a'
+    return . mconcat $ [base, p', middle, a']
 
 data SlackTestReport = SlackTestReport {
   topic :: Text,

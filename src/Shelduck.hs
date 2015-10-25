@@ -14,7 +14,7 @@ module Shelduck (
     WebhookRequest,
     performRequest,
     blank,
-    doHandle
+    checkAssertion
   ) where
 
 import           Control.Concurrent.Async
@@ -63,11 +63,12 @@ doWait :: RequestData -> Int -> W.Response L.ByteString -> ReaderT (TVar TopicRe
 doWait d c x = do
   t <- ask
   (c, r) <- lift $ pollingIO c t predicate (return x)
-  doRetry d doPost >> return (TimedResponse r c)
+  doRetry d doPost
+  return (TimedResponse r c)
   where predicate t = fmap isJust (readTVarIO t)
 
-doHandle :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
-doHandle w = ask >>=
+checkAssertion :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
+checkAssertion w = ask >>=
   \t -> lift $ do
     b <- fromMaybe mempty <$> atomically (readAndWipe t)
     pass <- checkTopic b (w ^. requestTopic)
@@ -93,14 +94,12 @@ performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO TimedResponse
 performRequest w = doTemplating >>= \req ->
                    doPost req >>=
                    doLog >>=
-                   doWait req polls >>=
-                   (\x ->
-                     lift (doLogTimings polls x) >>
-                     doHandle w >> return x)
+                   (doWait req polls >=> handleTestCompletion)
   where doTemplating = lift $ do
           e <- template (w ^. requestEndpoint)
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
           return (w, e, p)
+        handleTestCompletion x = lift (doLogTimings polls x) >> checkAssertion w >> return x
 
 checkTopic :: Topic -> Topic -> IO Bool
 checkTopic b t =
