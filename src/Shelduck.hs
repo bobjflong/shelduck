@@ -8,6 +8,7 @@ module Shelduck (
     requestParameters,
     Shelduck.response,
     timing,
+    testResult,
     info,
     TopicResult,
     server,
@@ -40,14 +41,23 @@ import           Shelduck.Templating
 import           Shelly
 import           Web.Spock.Safe
 
+data AssertionResult = Pending | Passed | Failed deriving (Show)
+
+fromBool :: Bool -> AssertionResult
+fromBool True = Passed
+fromBool False = Failed
+
 data TimedResponse = TimedResponse {
   _response :: W.Response L.ByteString,
-  _timing   :: Int
+  _timing   :: Int,
+  _testResult :: AssertionResult
 } deriving (Show)
 
 $(makeLenses ''TimedResponse)
 
 type Topic = Text
+
+type TestRun a = ReaderT (TVar TopicResult) IO a
 
 doPost :: RequestData -> ReaderT a IO (W.Response L.ByteString)
 doPost (w, e, p) = lift $ do
@@ -55,25 +65,23 @@ doPost (w, e, p) = lift $ do
   W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
   where json x = object ["endpoint" .= x, "params" .= p, "headers" .= (w ^. requestOpts . W.headers & show)]
 
-doLog :: W.Response L.ByteString -> ReaderT a IO (W.Response L.ByteString)
+doLog :: W.Response L.ByteString -> TestRun (W.Response L.ByteString)
 doLog r = lift ((info . json . pack . show) (r ^. W.responseStatus . W.statusCode)) >> return r
   where json s = object ["status" .= s]
 
-doWait :: RequestData -> Int -> W.Response L.ByteString -> ReaderT (TVar TopicResult) IO TimedResponse
+doWait :: RequestData -> Int -> W.Response L.ByteString -> TestRun TimedResponse
 doWait d c x = do
   t <- ask
   (c, r) <- lift $ pollingIO c t predicate (return x)
   doRetry d doPost
-  return (TimedResponse r c)
+  return (TimedResponse r c Pending)
   where predicate t = fmap isJust (readTVarIO t)
 
-checkAssertion :: WebhookRequest -> ReaderT (TVar TopicResult) IO Bool
+checkAssertion :: WebhookRequest -> TestRun Bool
 checkAssertion w = ask >>=
   \t -> lift $ do
     b <- fromMaybe mempty <$> atomically (readAndWipe t)
-    pass <- checkTopic b (w ^. requestTopic)
-    sendToServices (w ^. requestTopic) pass
-    return pass
+    checkTopic b (w ^. requestTopic)
 
 sendToServices :: Topic -> Bool -> IO ()
 sendToServices t b = do
@@ -90,16 +98,23 @@ doLogTimings :: Int -> TimedResponse -> IO ()
 doLogTimings i t = void $ info $ object ["duration" .= time]
   where time = (i - (t ^. timing)) * pollTime
 
-performRequest :: WebhookRequest -> ReaderT (TVar TopicResult) IO TimedResponse
+performRequest :: WebhookRequest -> TestRun TimedResponse
 performRequest w = doTemplating >>= \req ->
                    doPost req >>=
                    doLog >>=
-                   (doWait req polls >=> handleTestCompletion)
+                   (doWait req polls >=> handleTestCompletion w)
   where doTemplating = lift $ do
           e <- template (w ^. requestEndpoint)
           p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
           return (w, e, p)
-        handleTestCompletion x = lift (doLogTimings polls x) >> checkAssertion w >> return x
+
+handleTestCompletion :: WebhookRequest -> TimedResponse -> TestRun TimedResponse
+handleTestCompletion w x = do
+  r <- checkAssertion w
+  lift $ do
+    doLogTimings polls x
+    sendToServices (w ^. requestTopic) r
+  return (testResult .~ fromBool r $ x)
 
 checkTopic :: Topic -> Topic -> IO Bool
 checkTopic b t =
