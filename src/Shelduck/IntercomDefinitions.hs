@@ -39,6 +39,9 @@ type DefinitionList = IO [WebhookRequest]
 userId :: T.Text
 userId = "55b26822ce97179e52001334"
 
+userIdForConversation :: T.Text
+userIdForConversation = "55b251b52a281e8b530009a1"
+
 userEmail :: T.Text
 userEmail = "bob+testuser17@intercom.io"
 
@@ -117,25 +120,25 @@ run t = void $ do
              & requestTopic .~ "conversation.user.created"
 
   options <- opts
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
              & requestOpts .~ options
-             & requestParameters .~ object ["intercom_user_id" .= userId, "body" .= hi, "type" .= userType, "message_type" .= commentType]
+             & requestParameters .~ object ["intercom_user_id" .= userIdForConversation, "body" .= hi, "type" .= userType, "message_type" .= commentType]
              & requestTopic .~ "conversation.user.replied"
 
   options <- opts
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= commentType]
              & requestTopic .~ "conversation.admin.replied"
 
   options <- opts
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= noteType]
              & requestTopic .~ "conversation.admin.noted"
 
   options <- opts
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1039067180/reply"
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "assignee_id" .= assigneeId, "body" .= hi, "type" .= adminType, "message_type" .= assignmentType]
              & requestTopic .~ "conversation.admin.assigned"
