@@ -8,3 +8,6 @@ retryWait = 10000000
 
 polls :: Int
 polls = 2000
+
+alarmThreshold :: Double
+alarmThreshold = 0.5

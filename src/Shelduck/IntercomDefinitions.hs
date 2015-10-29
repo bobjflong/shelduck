@@ -7,6 +7,7 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
 import           Control.Monad
+import           Control.Monad.State.Strict
 import           Control.Monad.Trans.Reader
 import           Data.Aeson                  (object, (.=))
 import           Data.Aeson.Lens             as AL
@@ -18,6 +19,7 @@ import           Data.UUID
 import           Data.UUID.V4
 import qualified Network.Wreq                as W
 import           Shelduck                    hiding (opts)
+import           Shelduck.Alarming
 import           System.Environment
 
 opts = do
@@ -30,8 +32,6 @@ opts = do
                       & W.header "Content-Type" .~ ["application/json"]
                       & W.header "X-TraceId" .~ [pack xThreadId]
                       & W.auth ?~ W.basicAuth (pack appId) (pack appApiKey)
-
-type DefinitionList = IO [WebhookRequest]
 
 --
 -- Example parameters for API requests
@@ -78,95 +78,92 @@ tagName = "foo"
 eventName :: T.Text
 eventName = "shelduck-test-event"
 
-run :: TVar TopicResult -> IO ()
+run :: TVar TopicResult -> StateT DefinitionListRun IO ()
 run t = void $ do
-  threadDelay 5000000
+  lift $ threadDelay 5000000
 
-  options <- opts
-  eventTimestamp <- round <$> getPOSIXTime
+  options <- grabOptions
+  eventTimestamp <- lift $ round <$> getPOSIXTime
   go $ blank & requestEndpoint .~ "https://api.intercom.io/events"
              & requestOpts .~ options
              & requestParameters .~ object ["email" .= userEmail, "event_name" .= eventName, "created_at" .= (eventTimestamp :: Integer)]
              & requestTopic .~ "event.created"
 
-  options <- opts
+  options <- grabOptions
   contactResp <- go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
                             & requestOpts .~ options
                             & requestParameters .~ object []
                             & requestTopic .~ "contact.created"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
              & requestOpts .~ options
              & requestParameters .~ object ["id" .= cid contactResp, "email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
              & requestTopic .~ "contact.added_email"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts/convert"
              & requestOpts .~ options
              & requestParameters .~ object ["contact" .= object ["id" .= cid contactResp], "user" .= object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]]
              & requestTopic .~ "contact.signed_up"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/users"
              & requestOpts .~ options
              & requestParameters .~ object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
              & requestTopic .~ "user.created"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/messages"
              & requestOpts .~ options
              & requestParameters .~ object ["from" .= object ["id" .= userId, "type" .= userType], "body" .= hi]
              & requestTopic .~ "conversation.user.created"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["intercom_user_id" .= userIdForConversation, "body" .= hi, "type" .= userType, "message_type" .= commentType]
              & requestTopic .~ "conversation.user.replied"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= commentType]
              & requestTopic .~ "conversation.admin.replied"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= noteType]
              & requestTopic .~ "conversation.admin.noted"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "assignee_id" .= assigneeId, "body" .= hi, "type" .= adminType, "message_type" .= assignmentType]
              & requestTopic .~ "conversation.admin.assigned"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/tags"
              & requestOpts .~ options
              & requestParameters .~ object ["name" .= tagName, "users" .= [object ["id" .= userId]]]
              & requestTopic .~ "user.tag.created"
 
-  options <- opts
+  options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/tags"
              & requestOpts .~ options
              & requestParameters .~ object ["name" .= tagName, "users" .= [object ["untag" .= True, "id" .= userId]]]
              & requestTopic .~ "user.tag.deleted"
-  where go = runDefinition t
+  where go :: WebhookRequest -> StateT DefinitionListRun IO (W.Response L.ByteString)
+        go = ((^. response) <$>) . runAssertion t
         cid resp = resp ^. W.responseBody . key "id" . _String
+        grabOptions = lift opts
 
 runIntercomDefinitions :: IO ()
 runIntercomDefinitions = do
   info "Running Intercom definitions"
   r <- newTVarIO Nothing :: IO (TVar TopicResult)
   withAsync (server r) $ \webServer ->
-    withAsync (run r) $ \testRun -> wait testRun >> cancel webServer
+    withAsync (runDefs r) $ \testRun -> wait testRun >> cancel webServer
   return ()
-
-runDefinition :: TVar TopicResult -> WebhookRequest -> IO (W.Response L.ByteString)
-runDefinition t w = do
-  x <- runReaderT req t
-  return $ x ^. response
-  where req = performRequest w
+  where runDefs r = execStateT (run r) >=> alarm $ defaultDefinitionListRun
