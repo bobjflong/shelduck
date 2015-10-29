@@ -111,10 +111,9 @@ performRequest w = doTemplating >>= \req ->
                    doPost req >>=
                    doLog >>=
                    (doWait req polls >=> handleTestCompletion w)
-  where doTemplating = lift $ do
-          e <- template (w ^. requestEndpoint)
-          p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
-          return (w, e, p)
+  where doTemplating = lift $ ((,,) w)
+          <$> template (w ^. requestEndpoint)
+          <*> template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
 
 handleTestCompletion :: WebhookRequest -> TimedResponse -> TestRun TimedResponse
 handleTestCompletion w x = do
