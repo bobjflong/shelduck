@@ -67,7 +67,7 @@ type Topic = Text
 
 type TestRun a = ReaderT (TVar TopicResult) IO a
 
-doPost :: RequestData -> ReaderT a IO (W.Response L.ByteString)
+doPost :: RequestData -> TestRun (W.Response L.ByteString)
 doPost (w, e, p) = lift $ do
   (info . json) e
   W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
