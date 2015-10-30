@@ -15,13 +15,21 @@ module Shelduck (
     WebhookRequest,
     performRequest,
     blank,
-    checkAssertion
+    checkAssertion,
+    DefinitionListRun,
+    assertionCount,
+    assertionFailedCount,
+    defaultDefinitionListRun,
+    TimedResponse,
+    AssertionResult(..),
+    runAssertion
   ) where
 
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
 import           Control.Monad
+import           Control.Monad.State.Strict
 import           Control.Monad.STM
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Reader
@@ -41,15 +49,15 @@ import           Shelduck.Templating
 import           Shelly
 import           Web.Spock.Safe
 
-data AssertionResult = Pending | Passed | Failed deriving (Show)
+data AssertionResult = Pending | Passed | Failed deriving (Show, Eq)
 
 fromBool :: Bool -> AssertionResult
 fromBool True = Passed
 fromBool False = Failed
 
 data TimedResponse = TimedResponse {
-  _response :: W.Response L.ByteString,
-  _timing   :: Int,
+  _response   :: W.Response L.ByteString,
+  _timing     :: Int,
   _testResult :: AssertionResult
 } deriving (Show)
 
@@ -59,7 +67,7 @@ type Topic = Text
 
 type TestRun a = ReaderT (TVar TopicResult) IO a
 
-doPost :: RequestData -> ReaderT a IO (W.Response L.ByteString)
+doPost :: RequestData -> TestRun (W.Response L.ByteString)
 doPost (w, e, p) = lift $ do
   (info . json) e
   W.postWith (w ^. requestOpts) (unpack e) (encodeUtf8 p)
@@ -103,10 +111,9 @@ performRequest w = doTemplating >>= \req ->
                    doPost req >>=
                    doLog >>=
                    (doWait req polls >=> handleTestCompletion w)
-  where doTemplating = lift $ do
-          e <- template (w ^. requestEndpoint)
-          p <- template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
-          return (w, e, p)
+  where doTemplating = lift $ ((,,) w)
+          <$> template (w ^. requestEndpoint)
+          <*> template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
 
 handleTestCompletion :: WebhookRequest -> TimedResponse -> TestRun TimedResponse
 handleTestCompletion w x = do
@@ -122,6 +129,24 @@ checkTopic b t =
   then info (object ["good_topic" .= showResult b]) >> return True
   else info (object ["bad_topic" .= showResult b]) >> return False
   where showResult = pack . show
+
+data DefinitionListRun = DefinitionListRun {
+  _assertionCount       :: Integer,
+  _assertionFailedCount :: Integer
+} deriving (Show)
+
+defaultDefinitionListRun = DefinitionListRun 0 0
+
+$(makeLenses ''DefinitionListRun)
+
+runAssertion :: (MonadIO m) => TVar TopicResult -> WebhookRequest -> StateT DefinitionListRun m TimedResponse
+runAssertion t x = do
+  assertionResult <- liftIO $ runReaderT (performRequest x) t
+  assertionCount += 1
+  if assertionResult ^. testResult == Failed
+    then assertionFailedCount += 1
+    else assertionFailedCount += 0
+  return assertionResult
 
 ngrok :: IO ()
 ngrok = shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info . json)

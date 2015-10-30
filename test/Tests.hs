@@ -11,6 +11,7 @@ import           Data.Aeson
 import           Data.Maybe
 import qualified Network.Wreq               as W
 import           Shelduck
+import           Shelduck.Alarming
 import           Shelduck.Internal
 import           Shelduck.LogParser
 import           System.Environment
@@ -94,3 +95,11 @@ main = hspec $ do
       (show . verb) logLine `shouldBe` "unknown action: \"{\\\"bad\\\": \""
       let logLine = toLogLine "{\"foo\":\"bar\"}"
       (show . verb) logLine `shouldBe` "log line contained no action"
+  describe "Alarming" $
+    it "should alarm when the threshold is reached" $ do
+      let badRun = defaultDefinitionListRun & assertionFailedCount .~ 5
+                                            & assertionCount .~ 10
+      shouldAlarm badRun `shouldBe` True
+      let goodRun = defaultDefinitionListRun & assertionFailedCount .~ 4
+                                             & assertionCount .~ 10
+      shouldAlarm goodRun `shouldBe` False

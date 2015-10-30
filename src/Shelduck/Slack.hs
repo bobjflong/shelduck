@@ -2,7 +2,8 @@
 
 module Shelduck.Slack (
   SlackTestReport(..),
-  sendToSlack
+  sendToSlack,
+  sendToSlackRaw
 )  where
 
 import           Control.Lens       hiding ((.=))
@@ -19,3 +20,10 @@ sendToSlack t b = do
   case e of
     Nothing -> return ()
     (Just endpoint) -> W.post endpoint (encode $ SlackTestReport t b) & void
+
+sendToSlackRaw :: Value -> IO ()
+sendToSlackRaw t = do
+  e <- lookupEnv "SLACK_WEBHOOK_URL"
+  case e of
+    Nothing -> return ()
+    (Just endpoint) -> W.post endpoint (encode t) & void
