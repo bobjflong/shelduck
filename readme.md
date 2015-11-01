@@ -1,8 +1,5 @@
 ### shelduck
 
-[![Build
-Status](https://semaphoreci.com/api/v1/projects/dff9e854-4c40-49ac-afc9-204f9a70c370/585391/badge.svg)](https://semaphoreci.com/robertjflong/shelduck)
-
 shelduck is a hybrid web-server/api-client. Its main use is as an opinionated tool for QAing webhooks on remote services. Read about it [here](http://www.boblong.co/automated-webhook-qa/).
 
 shelduck is made up of a few concurrent components:
