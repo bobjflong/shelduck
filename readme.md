@@ -64,7 +64,7 @@ runIntercomDefinitions = do
 
 ### Web UI
 
-Currently, shelduck writes to `~/shelduck.log` (this will be configurable one day). A web-ui for this log file is made available at `localhost:4567/web-ui`.
+Currently, shelduck writes to `~/shelduck.log` (this will be configurable one day). You can boot a web app which provides a visual representation of that log using the `Shelduck.WebApp` module. See `src/Main.hs` for an example.
 
 <img src="https://s3-eu-west-1.amazonaws.com/bobblogimages/Screen+Shot+2015-10-25+at+20.19.03.png"/>
 
