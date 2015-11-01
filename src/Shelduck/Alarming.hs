@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Shelduck.Alarming (
-  module Shelduck,
   shouldAlarm,
   alarm
 )  where

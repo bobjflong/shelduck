@@ -8,8 +8,8 @@ import           Data.ByteString.Lazy
 import           Data.HashMap.Strict
 import           Data.Maybe
 import qualified Data.Text            as T
+import           Data.Text.Encoding
 import           Prelude              hiding (lookup)
-import Data.Text.Encoding
 
 data LogLine = Data (HashMap T.Text Value) | UnParseable T.Text
 
