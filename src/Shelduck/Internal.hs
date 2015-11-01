@@ -40,11 +40,12 @@ logFile = do
 
 type TopicResult = Maybe Text
 type RequestData = (WebhookRequest, Text, Text)
+type TestRun a = ReaderT (TVar TopicResult) IO a
 
 record :: Maybe Text -> TVar (Maybe Text) -> IO ()
 record t r = atomically $ writeTVar r t
 
-doRetry :: RequestData -> (RequestData -> ReaderT (TVar TopicResult) IO b) -> ReaderT (TVar TopicResult) IO ()
+doRetry :: RequestData -> (RequestData -> ReaderT (TVar TopicResult) IO b) -> TestRun ()
 doRetry r c = ask >>=
   \t -> do
     currentResult <- lift $ atomically (readTVar t)

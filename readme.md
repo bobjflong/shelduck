@@ -3,7 +3,7 @@
 [![Build
 Status](https://semaphoreci.com/api/v1/projects/dff9e854-4c40-49ac-afc9-204f9a70c370/585391/badge.svg)](https://semaphoreci.com/robertjflong/shelduck)
 
-shelduck is a hybrid web-server/api-client. Its main use is as an opinionated tool for QAing webhooks on remote services.
+shelduck is a hybrid web-server/api-client. Its main use is as an opinionated tool for QAing webhooks on remote services. Read about it [here](http://www.boblong.co/automated-webhook-qa/).
 
 shelduck is made up of a few concurrent components:
 
@@ -36,35 +36,37 @@ blank & requestEndpoint .~ "https://api.intercom.io/users"
 
 ### Running shelduck
 
-Check out src/IntercomDefinitions.hs for some descriptions of [Intercom webhooks](https://doc.intercom.io/api/#webhooks-and-notifications).
+Check out `src/Shelduck/IntercomDefinitions.hs` for some descriptions of [Intercom webhooks](https://doc.intercom.io/api/#webhooks-and-notifications).
 
 You can run shelduck by concurrently starting the server and request engine:
 
 ```haskell
-run :: TVar TopicResult -> IO ()
+run :: TVar TopicResult -> StateT DefinitionListRun IO ()
 run t = void $ do
-  options <- opts
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/contacts"
-             & requestOpts .~ options
-             & requestParameters .~ object []
-             & requestTopic .~ "contact.created"
   -- ...
-  where go = runDefinition t
+  go $ blank & requestEndpoint .~ "https://api.intercom.io/users"
+             & requestOpts .~ options
+             & requestParameters .~ object ["email" .= ("bob+{{random}}@intercom.io" :: T.Text)]
+             & requestTopic .~ "user.created"
+  -- ...
+  where go :: WebhookRequest -> StateT DefinitionListRun IO (W.Response L.ByteString)
+        go = ((^. response) <$>) . runAssertion t
 
-
-runDefinition :: TVar TopicResult -> WebhookRequest -> IO (W.Response L.ByteString)
-runDefinition t w = do
-  x <- runReaderT req t
-  return $ x ^. response
-  where req = performRequest w
-
-runDefinitions :: IO ()
-runDefinitions = do
-  info "Running definitions"
+runIntercomDefinitions :: IO ()
+runIntercomDefinitions = do
+  info "Running Intercom definitions"
   r <- newTVarIO Nothing :: IO (TVar TopicResult)
-  concurrently (server r) (run r)
+  withAsync (server r) $ \webServer ->
+    withAsync (runDefs r) $ \testRun -> wait testRun >> cancel webServer
   return ()
+  where runDefs r = execStateT (run r) defaultDefinitionListRun
 ```
+
+### Web UI
+
+Currently, shelduck writes to `~/shelduck.log` (this will be configurable one day). A web-ui for this log file is made available at `localhost:4567/web-ui`.
+
+<img src="https://s3-eu-west-1.amazonaws.com/bobblogimages/Screen+Shot+2015-10-25+at+20.19.03.png"/>
 
 ### Keen support
 

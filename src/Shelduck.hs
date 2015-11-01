@@ -8,7 +8,6 @@ module Shelduck (
     requestParameters,
     Shelduck.response,
     timing,
-    testResult,
     info,
     TopicResult,
     server,
@@ -64,8 +63,6 @@ data TimedResponse = TimedResponse {
 $(makeLenses ''TimedResponse)
 
 type Topic = Text
-
-type TestRun a = ReaderT (TVar TopicResult) IO a
 
 doPost :: RequestData -> TestRun (W.Response L.ByteString)
 doPost (w, e, p) = lift $ do
