@@ -1,13 +1,18 @@
 sudo: false
-before_install:
-  # stack
-  - mkdir -p ~/.local/bin
-  - export PATH=~/.local/bin:$PATH
-  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 
 install:
-  - ./travis_long stack --no-terminal setup
-  - ./travis_long stack --no-terminal --skip-ghc-check test --only-snapshot
+  # stack
+  - mkdir -p ~/.local/bin
+  - travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v0.1.4.0/stack-0.1.4.0-x86_64-linux.tar.gz | tar -xvzf -
+  - mv stack ~/.local/bin
+  - export PATH=~/.local/bin:$PATH
+  - stack --version
 
 script:
-  - stack --no-terminal --skip-ghc-check test
+  - stack setup
+  - stack build
+  - stack test
+
+cache:
+  directories:
+  - $HOME/.stack
