@@ -7,6 +7,7 @@ import           Control.Concurrent.Async
 import           Shelduck.IntercomDefinitions
 import           Shelduck.WebApp
 import           System.Environment
+import           System.Posix.Process.ByteString
 
 printUsage :: IO ()
 printUsage = mapM_ putStrLn usageLines
@@ -18,7 +19,12 @@ runIntercomDefinitionsFromCommandLine intercomArgs =
     ("loop":_) -> runIntercomDefinitions >> threadDelay 1800000000 >> runIntercomDefinitionsFromCommandLine intercomArgs
     _ -> runIntercomDefinitions
 
+writePid :: IO ()
+writePid = getProcessID >>= writeProcessID
+  where writeProcessID = writeFile "shelduck.pid" . show
+
 main = do
+  writePid
   args <- getArgs
   withAsync webAppServer $ \app -> do
     case args of
