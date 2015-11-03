@@ -154,9 +154,11 @@ run t = void $ do
              & requestOpts .~ options
              & requestParameters .~ object ["name" .= tagName, "users" .= [object ["untag" .= True, "id" .= userId]]]
              & requestTopic .~ "user.tag.deleted"
-  where go :: WebhookRequest -> StateT DefinitionListRun IO (W.Response L.ByteString)
+  where go :: WebhookRequest -> StateT DefinitionListRun IO (Maybe (W.Response L.ByteString))
         go = ((^. response) <$>) . runAssertion t
-        cid resp = resp ^. W.responseBody . key "id" . _String
+        cid r = case r of
+          Nothing -> mempty
+          (Just resp) -> resp ^. W.responseBody . key "id" . _String
         grabOptions = lift opts
 
 runIntercomDefinitions :: IO ()
