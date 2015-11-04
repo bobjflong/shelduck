@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Shelduck.Internal where
 
@@ -58,8 +59,8 @@ pollingIO :: Int -> TVar a -> (TVar a -> IO Bool) -> IO b -> IO (Int, b)
 pollingIO c t x i = temporaryFailure >>= continue
   where continue f = if f then tryAgain else finish
         tryAgain = threadDelay pollTime >> pollingIO (c - 1) t x i
-        finish = i >>= \result -> return (c, result)
-        temporaryFailure = x t >>= \p -> return $ not p && c > 0
+        finish = (c,) <$> i
+        temporaryFailure = ((&& c > 0) . not) <$> x t
 
 keenEndpoint :: IO (Maybe String)
 keenEndpoint = do
