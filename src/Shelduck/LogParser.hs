@@ -21,6 +21,7 @@ data LogLineAction = PostRequestMade
                      | UnknownAction T.Text
                      | Retry
                      | NoAction
+                     | HttpExceptionDuringTest
 
 instance Show LogLineAction where
   show PostRequestMade = "post request made"
@@ -31,6 +32,7 @@ instance Show LogLineAction where
   show Retry = "retry performed"
   show (UnknownAction b) = mconcat ["unknown action: ", show b]
   show NoAction = "log line contained no action"
+  show HttpExceptionDuringTest = "http exception detected"
 
 verb :: LogLine -> LogLineAction
 verb (UnParseable b) = UnknownAction b
@@ -41,6 +43,7 @@ verb (Data l) = resolve logDictionary
                        , lookup "good_topic" l *> pure CorrectTopicReceived
                        , lookup "bad_topic" l *> pure IncorrectTopicReceived
                        , lookup "retry" l *> pure Retry
+                       , lookup "http_exception" l *> pure HttpExceptionDuringTest
                        ]
 
 resolve :: [Maybe LogLineAction] -> LogLineAction

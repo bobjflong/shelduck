@@ -8,6 +8,7 @@ module Shelduck (
     requestParameters,
     Shelduck.response,
     timing,
+    testResult,
     info,
     TopicResult,
     server,
@@ -15,6 +16,7 @@ module Shelduck (
     performRequest,
     blank,
     checkAssertion,
+    handleHTTPError,
     DefinitionListRun,
     assertionCount,
     assertionFailedCount,
@@ -28,6 +30,7 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
 import           Control.Monad
+import           Control.Monad.Catch
 import           Control.Monad.State.Strict
 import           Control.Monad.STM
 import           Control.Monad.Trans.Class
@@ -39,6 +42,7 @@ import qualified Data.ByteString.Lazy        as L
 import           Data.Maybe
 import           Data.Text
 import           Data.Text.Encoding
+import           Network.HTTP.Client         (HttpException)
 import qualified Network.Wreq                as W
 import           Shelduck.Configuration
 import           Shelduck.Internal
@@ -55,7 +59,7 @@ fromBool True = Passed
 fromBool False = Failed
 
 data TimedResponse = TimedResponse {
-  _response   :: W.Response L.ByteString,
+  _response   :: Maybe (W.Response L.ByteString),
   _timing     :: Int,
   _testResult :: AssertionResult
 } deriving (Show)
@@ -79,7 +83,7 @@ doWait d c x = do
   t <- ask
   (c, r) <- lift $ pollingIO c t predicate (return x)
   doRetry d doPost
-  return (TimedResponse r c Pending)
+  return (TimedResponse (pure r) c Pending)
   where predicate t = fmap isJust (readTVarIO t)
 
 checkAssertion :: WebhookRequest -> TestRun Bool
@@ -108,7 +112,7 @@ performRequest w = doTemplating >>= \req ->
                    doPost req >>=
                    doLog >>=
                    (doWait req polls >=> handleTestCompletion w)
-  where doTemplating = lift $ ((,,) w)
+  where doTemplating = lift $ (,,) w
           <$> template (w ^. requestEndpoint)
           <*> template ((decodeUtf8 . toStrict . encode) $ w ^. requestParameters)
 
@@ -136,14 +140,23 @@ defaultDefinitionListRun = DefinitionListRun 0 0
 
 $(makeLenses ''DefinitionListRun)
 
-runAssertion :: (MonadIO m) => TVar TopicResult -> WebhookRequest -> StateT DefinitionListRun m TimedResponse
+runAssertion :: (MonadIO m, MonadCatch m) => TVar TopicResult -> WebhookRequest -> StateT DefinitionListRun m TimedResponse
 runAssertion t x = do
-  assertionResult <- liftIO $ runReaderT (performRequest x) t
+  assertionResult <- catch (liftIO runRequest) handleHTTPError
   assertionCount += 1
   if assertionResult ^. testResult == Failed
     then assertionFailedCount += 1
     else assertionFailedCount += 0
   return assertionResult
+  where runRequest = runReaderT (performRequest x) t
+
+handleHTTPError :: (MonadIO m, MonadCatch m) => HttpException -> StateT DefinitionListRun m TimedResponse
+handleHTTPError e = do
+  assertionCount += 1
+  assertionFailedCount += 1
+  liftIO $ info errorJSON
+  return (TimedResponse Nothing 0 Failed)
+  where errorJSON = object ["http_exception" .= show e]
 
 ngrok :: IO ()
 ngrok = shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info . json)

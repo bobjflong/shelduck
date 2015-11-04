@@ -1,17 +1,17 @@
 name:                shelduck
 version:             0.1.4.0
--- synopsis:            
--- description:         
+-- synopsis:
+-- description:
 license:             Apache-2.0
 license-file:        LICENSE
 author:              Bob Long
 synopsis:            Test webhooks locally
 description:         Opinionated tool for QAing webhooks on remote services using ngrok
 maintainer:          robertjflong@gmail.com
--- copyright:           
+-- copyright:
 category:            Web
 build-type:          Simple
--- extra-source-files:  
+-- extra-source-files:
 cabal-version:       >=1.10
 
 source-repository head
@@ -43,6 +43,8 @@ library
                        , aeson-pretty
                        , shelly
                        , mtl
+                       , http-client
+                       , exceptions
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -71,6 +73,8 @@ executable shelduck
                        , aeson-pretty
                        , mtl
                        , unix
+                       , http-client
+                       , exceptions
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -90,4 +94,6 @@ test-suite tests
                        , transformers
                        , stm
                        , wreq
+                       , http-client
+                       , mtl
   default-language:    Haskell2010

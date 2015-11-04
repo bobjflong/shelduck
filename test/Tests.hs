@@ -5,10 +5,12 @@ module Main where
 import           Control.Concurrent.STM
 import           Control.Lens
 import           Control.Monad
+import           Control.Monad.State.Strict
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import           Data.Maybe
+import           Network.HTTP.Client        (HttpException (HandshakeFailed))
 import qualified Network.Wreq               as W
 import           Shelduck
 import           Shelduck.Alarming
@@ -103,3 +105,9 @@ main = hspec $ do
       let goodRun = defaultDefinitionListRun & assertionFailedCount .~ 4
                                              & assertionCount .~ 10
       shouldAlarm goodRun `shouldBe` False
+  describe "http errors" $
+    it "should count as errors" $ do
+      (r, d) <- runStateT (handleHTTPError HandshakeFailed) defaultDefinitionListRun
+      d ^. assertionCount `shouldBe` 1
+      d ^. assertionFailedCount `shouldBe` 1
+      r ^. testResult `shouldBe` Failed
