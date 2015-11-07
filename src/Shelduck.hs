@@ -50,6 +50,7 @@ import           Shelduck.Keen
 import           Shelduck.Slack
 import           Shelduck.Templating
 import           Shelly
+import           System.Environment
 import           Web.Spock.Safe
 
 data AssertionResult = Pending | Passed | Failed deriving (Show, Eq)
@@ -159,7 +160,11 @@ handleHTTPError e = do
   where errorJSON = object ["http_exception" .= show e]
 
 ngrok :: IO ()
-ngrok = shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info . json)
+ngrok = do
+  enableNgrok <- (== (pure "true")) <$> lookupEnv "ENABLE_NGROK"
+  if enableNgrok
+    then shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info . json)
+    else info "skipping ngrok"
   where json x = object ["ngrok_message" .= x]
 
 server :: TVar TopicResult -> IO ()

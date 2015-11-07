@@ -20,7 +20,9 @@ import           Data.Time.Clock.POSIX
 import qualified Network.Wreq                as W
 import           Shelduck.Configuration
 import           System.Directory
+import           System.Directory
 import           System.Environment
+import qualified System.IO                   as IO
 
 data WebhookRequest = WebhookRequest {
   _requestEndpoint   :: Text,
@@ -85,9 +87,15 @@ info :: Value -> IO ()
 info (Object o) = do
   time <- round <$> getPOSIXTime
   file <- logFile
-  BL.appendFile file (mconcat [encode (withTimestamp time), "\n"])
+  shouldWrite <- doesFileExist file
+  if shouldWrite
+    then BL.appendFile file (mconcat [encode (withTimestamp time), "\n"])
+    else IO.hPutStr IO.stderr "No log file found"
   where withTimestamp t = Object $ insert "_timestamp" (jsonString t) o
         jsonString = String . pack . show
 info v = do
   file <- logFile
-  BL.appendFile file (mconcat [encode v, "\n"])
+  shouldWrite <- doesFileExist file
+  if shouldWrite
+    then BL.appendFile file (mconcat [encode v, "\n"])
+    else IO.hPutStr IO.stderr "No log file found"
