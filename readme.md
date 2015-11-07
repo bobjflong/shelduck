@@ -4,7 +4,7 @@ shelduck is a hybrid web-server/api-client. Its main use is as an opinionated to
 
 shelduck is made up of a few concurrent components:
 
-* An [ngrok](https://ngrok.com/) client is used to forward a local service. shelduck expects ngrok in your path, and a fixed ngrok url (requires a paid account) with a configuration block like:
+* An [ngrok](https://ngrok.com/) client can be used to forward a local service (by setting `ENABLE_NGROK=true` in your Env). shelduck expects ngrok in your path, and a fixed ngrok url (requires a paid account) with a configuration block like:
 
 ```
 # ~/.ngrok2/ngrok.yml
@@ -72,3 +72,27 @@ Test runs are automatically sent to [Keen](https://keen.io/) if `KEEN_PROJECT_ID
 ### Slack support
 
 Test failures are sent to Slack as a webhook if `SLACK_WEBHOOK_URL` is set in your Env.
+
+### Developing/deploying
+
+I recommend running [NixOS](http://nixos.org/). [Here's](https://gist.github.com/bobjflong/0b0751b9ee436e2a55f6) an example Vagrantfile. You generally need `cabal2nix` and `cabal-install`:
+
+```
+nix-env -iA nixos.cabal-install
+nix-env -iA nixos.cabal2nix
+```
+
+I spend a lot of time in a repl:
+
+```
+cabal2nix --shell . > shell.nix
+nix-shell --command 'cabal repl'
+```
+
+To deploy a new version, I write a new `project.nix`, build using `run.nix`, and use `nix-copy-closure` to send it to a remote NixOS machine (eg. on EC2):
+
+```
+cabal2nix . > project.nix
+nix-build run.nix
+NIX_SSHOPTS="-i /vagrant/your.pem" nix-copy-closure --to root@12.34.567.890 /nix/store/abcdef-shelduck-0.1.4.2/bin/shelduck
+```
