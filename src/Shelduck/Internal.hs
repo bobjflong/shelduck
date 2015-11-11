@@ -7,6 +7,7 @@ module Shelduck.Internal where
 
 import           Control.Concurrent
 import           Control.Concurrent.STM.TVar
+import           Control.Conditional
 import           Control.Lens                hiding ((.=))
 import           Control.Monad
 import           Control.Monad.STM
@@ -87,15 +88,15 @@ info :: Value -> IO ()
 info (Object o) = do
   time <- round <$> getPOSIXTime
   file <- logFile
-  shouldWrite <- doesFileExist file
-  if shouldWrite
-    then BL.appendFile file (mconcat [encode (withTimestamp time), "\n"])
-    else IO.hPutStr IO.stderr "No log file found"
+  ifM (doesFileExist file) (appendToLog file (encode (withTimestamp time))) logWarn
   where withTimestamp t = Object $ insert "_timestamp" (jsonString t) o
         jsonString = String . pack . show
 info v = do
   file <- logFile
-  shouldWrite <- doesFileExist file
-  if shouldWrite
-    then BL.appendFile file (mconcat [encode v, "\n"])
-    else IO.hPutStr IO.stderr "No log file found"
+  ifM (doesFileExist file) (appendToLog file (encode v)) logWarn
+
+appendToLog :: FilePath -> BL.ByteString -> IO ()
+appendToLog file value = BL.appendFile file (mconcat [value, "\n"])
+
+logWarn :: IO ()
+logWarn = IO.hPutStr IO.stderr "No log file found"
