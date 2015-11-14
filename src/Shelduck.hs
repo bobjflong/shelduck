@@ -161,7 +161,7 @@ handleHTTPError e = do
 
 ngrok :: IO ()
 ngrok = do
-  enableNgrok <- (== (pure "true")) <$> lookupEnv "ENABLE_NGROK"
+  enableNgrok <- (== pure "true") <$> lookupEnv "ENABLE_NGROK"
   if enableNgrok
     then shelly $ verbosely $ run "ngrok" ["start", "shelduck"] >>= (liftIO . info . json)
     else info "skipping ngrok"

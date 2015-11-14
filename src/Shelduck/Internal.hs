@@ -21,7 +21,6 @@ import           Data.Time.Clock.POSIX
 import qualified Network.Wreq                as W
 import           Shelduck.Configuration
 import           System.Directory
-import           System.Directory
 import           System.Environment
 import qualified System.IO                   as IO
 
