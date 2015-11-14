@@ -12,7 +12,7 @@ let
       }:
       mkDerivation {
         pname = "shelduck";
-        version = "0.1.4.2";
+        version = "0.2.0.0";
         src = ./.;
         isLibrary = true;
         isExecutable = true;
