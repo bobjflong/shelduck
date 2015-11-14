@@ -10,6 +10,7 @@ import           Control.Concurrent.STM.TVar
 import           Control.Conditional
 import           Control.Lens                hiding ((.=))
 import           Control.Monad
+import           Control.Monad.State.Strict
 import           Control.Monad.STM
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Reader
@@ -43,17 +44,24 @@ logFile = do
 
 type TopicResult = Maybe Text
 type RequestData = (WebhookRequest, Text, Text)
-type TestRun a = ReaderT (TVar TopicResult) IO a
+
+data TestRunData = TestRunData {
+  _logs        :: [Value],
+  _topicResult :: TVar TopicResult
+}
+$(makeLenses ''TestRunData)
+
+type TestRun a = StateT TestRunData IO a
 
 record :: Maybe Text -> TVar (Maybe Text) -> IO ()
 record t r = atomically $ writeTVar r t
 
-doRetry :: RequestData -> (RequestData -> ReaderT (TVar TopicResult) IO b) -> TestRun ()
-doRetry r c = ask >>=
+doRetry :: RequestData -> (RequestData -> TestRun b) -> TestRun ()
+doRetry r c = get >>=
   \t -> do
-    currentResult <- lift $ atomically (readTVar t)
+    currentResult <- lift $ atomically (readTVar $ t ^. topicResult)
     case currentResult of
-      Nothing -> lift (info jsonRetry) >> c r >> void (lift $ threadDelay retryWait)
+      Nothing -> logs <>= [jsonRetry] >> c r >> void (lift $ threadDelay retryWait)
       _ -> return ()
     where jsonRetry = object ["retry" .= True]
 
@@ -84,12 +92,6 @@ instance ToJSON SlackTestReport where
   toJSON SlackTestReport{..} = object ["text" .= mconcat ["Topic: ", topic, ", pass: ", (pack . show) pass]]
 
 info :: Value -> IO ()
-info (Object o) = do
-  time <- round <$> getPOSIXTime
-  file <- logFile
-  ifM (doesFileExist file) (appendToLog file (encode (withTimestamp time))) logWarn
-  where withTimestamp t = Object $ insert "_timestamp" (jsonString t) o
-        jsonString = String . pack . show
 info v = do
   file <- logFile
   ifM (doesFileExist file) (appendToLog file (encode v)) logWarn

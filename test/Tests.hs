@@ -29,7 +29,7 @@ main = hspec $ do
                       & requestParameters .~ object []
                       & requestTopic .~ "foo"
           handler = checkAssertion req
-      result <- runReaderT handler r
+      result <- evalStateT handler (TestRunData [] r)
       result `shouldBe` True
     it "detects failures" $ do
       r <- newTVarIO (Just "bar") :: IO (TVar TopicResult)
@@ -38,23 +38,23 @@ main = hspec $ do
                       & requestParameters .~ object []
                       & requestTopic .~ "foo"
           handler = checkAssertion req
-      result <- runReaderT handler r
+      result <- evalStateT handler (TestRunData [] r)
       result `shouldBe` False
   describe "retries" $ do
     it "works" $ do
       r <- newTVarIO Nothing :: IO (TVar TopicResult)
       let requestData = (blank, mempty, mempty)
-          continue :: RequestData -> ReaderT (TVar TopicResult) IO ()
+          continue :: RequestData -> TestRun ()
           continue _ = void $ lift (atomically $ writeTVar r (Just "done"))
-      runReaderT (doRetry requestData continue) r
+      evalStateT (doRetry requestData continue) (TestRunData [] r)
       result <- readTVarIO r
       result `shouldBe` Just "done"
     it "does not retry unnecessarily" $ do
       r <- newTVarIO (Just "untouched") :: IO (TVar TopicResult)
       let requestData = (blank, mempty, mempty)
-          continue :: RequestData -> ReaderT (TVar TopicResult) IO ()
+          continue :: RequestData -> TestRun ()
           continue _ = void $ lift (atomically $ writeTVar r (Just "done"))
-      runReaderT (doRetry requestData continue) r
+      evalStateT (doRetry requestData continue) (TestRunData [] r)
       result <- readTVarIO r
       result `shouldBe` Just "untouched"
   describe "writing results" $

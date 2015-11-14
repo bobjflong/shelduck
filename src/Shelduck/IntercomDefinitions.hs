@@ -154,6 +154,9 @@ run t = void $ do
              & requestOpts .~ options
              & requestParameters .~ object ["name" .= tagName, "users" .= [object ["untag" .= True, "id" .= userId]]]
              & requestTopic .~ "user.tag.deleted"
+
+  st <- get
+  lift $ flush (st ^. definitionListLogs)
   where go :: WebhookRequest -> StateT DefinitionListRun IO (Maybe (W.Response L.ByteString))
         go = ((^. response) <$>) . runAssertion t
         cid r = case r of
