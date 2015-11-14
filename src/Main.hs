@@ -4,10 +4,17 @@ module Main (
 
 import           Control.Concurrent
 import           Control.Concurrent.Async
+import           Control.Monad
 import           Shelduck.IntercomDefinitions
+import           Shelduck.Internal
 import           Shelduck.WebApp
 import           System.Environment
+import           System.IO
 import           System.Posix.Process.ByteString
+
+createLogFile :: IO ()
+createLogFile = logFile >>= openAndClose
+  where openAndClose = flip openFile AppendMode >=> hClose
 
 printUsage :: IO ()
 printUsage = mapM_ putStrLn usageLines
@@ -24,6 +31,7 @@ writePid = getProcessID >>= writeProcessID
   where writeProcessID = writeFile "shelduck.pid" . show
 
 main = do
+  createLogFile
   writePid
   args <- getArgs
   withAsync webAppServer $ \app -> do
