@@ -137,7 +137,7 @@ handleTestCompletion w x = do
 flush :: [Value] -> IO ()
 flush vs = do
   file <- logFile
-  TIO.appendFile file $ T.intercalate "\n" (fmap _encode vs)
+  TIO.appendFile file $ T.intercalate "\n" (fmap _encode vs) `mappend` "\n"
   where _encode = TL.toStrict . LTE.decodeUtf8 . encode
 
 doFlush :: a -> TestRun a
