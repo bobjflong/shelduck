@@ -13,6 +13,7 @@ import           Data.Aeson                  (object, (.=))
 import           Data.Aeson.Lens             as AL
 import           Data.ByteString.Char8       (pack)
 import qualified Data.ByteString.Lazy        as L
+import           Data.Maybe
 import qualified Data.Text                   as T
 import           Data.Time.Clock.POSIX
 import           Data.UUID
@@ -78,11 +79,21 @@ tagName = "foo"
 eventName :: T.Text
 eventName = "shelduck-test-event"
 
+fetchLatestConversation :: IO T.Text
+fetchLatestConversation = do
+  options <- opts
+  r <- W.getWith (parameterize options) "https://api.intercom.io/conversations"
+  return $ fromMaybe mempty (extract r)
+  where parameterize o = o & W.param "intercom_user_id" .~ [userIdForConversation]
+        extract r = r ^? W.responseBody  . key "conversations" . nth 0 . key "id" . _String
+
 run :: TVar TopicResult -> StateT DefinitionListRun IO ()
 run t = void $ do
   lift $ threadDelay 5000000
 
   options <- grabOptions
+  conversationId <- lift fetchLatestConversation
+
   eventTimestamp <- lift $ round <$> getPOSIXTime
   go $ blank & requestEndpoint .~ "https://api.intercom.io/events"
              & requestOpts .~ options
@@ -116,29 +127,29 @@ run t = void $ do
   options <- grabOptions
   go $ blank & requestEndpoint .~ "https://api.intercom.io/messages"
              & requestOpts .~ options
-             & requestParameters .~ object ["from" .= object ["id" .= userId, "type" .= userType], "body" .= hi]
+             & requestParameters .~ object ["from" .= object ["id" .= userIdForConversation, "type" .= userType], "body" .= hi]
              & requestTopic .~ "conversation.user.created"
 
   options <- grabOptions
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
+  go $ blank & requestEndpoint .~ (mconcat ["https://api.intercom.io/conversations/", conversationId, "/reply"])
              & requestOpts .~ options
              & requestParameters .~ object ["intercom_user_id" .= userIdForConversation, "body" .= hi, "type" .= userType, "message_type" .= commentType]
              & requestTopic .~ "conversation.user.replied"
 
   options <- grabOptions
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
+  go $ blank & requestEndpoint .~ (mconcat ["https://api.intercom.io/conversations/", conversationId, "/reply"])
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= commentType]
              & requestTopic .~ "conversation.admin.replied"
 
   options <- grabOptions
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
+  go $ blank & requestEndpoint .~ (mconcat ["https://api.intercom.io/conversations/", conversationId, "/reply"])
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "body" .= hi, "type" .= adminType, "message_type" .= noteType]
              & requestTopic .~ "conversation.admin.noted"
 
   options <- grabOptions
-  go $ blank & requestEndpoint .~ "https://api.intercom.io/conversations/1038629832/reply"
+  go $ blank & requestEndpoint .~ (mconcat ["https://api.intercom.io/conversations/", conversationId, "/reply"])
              & requestOpts .~ options
              & requestParameters .~ object ["admin_id" .= adminId, "assignee_id" .= assigneeId, "body" .= hi, "type" .= adminType, "message_type" .= assignmentType]
              & requestTopic .~ "conversation.admin.assigned"
