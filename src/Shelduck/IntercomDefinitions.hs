@@ -92,7 +92,6 @@ run t = void $ do
   lift $ threadDelay 5000000
 
   options <- grabOptions
-  conversationId <- lift fetchLatestConversation
 
   eventTimestamp <- lift $ round <$> getPOSIXTime
   go $ blank & requestEndpoint .~ "https://api.intercom.io/events"
@@ -129,6 +128,8 @@ run t = void $ do
              & requestOpts .~ options
              & requestParameters .~ object ["from" .= object ["id" .= userIdForConversation, "type" .= userType], "body" .= hi]
              & requestTopic .~ "conversation.user.created"
+
+  conversationId <- lift fetchLatestConversation
 
   options <- grabOptions
   go $ blank & requestEndpoint .~ (mconcat ["https://api.intercom.io/conversations/", conversationId, "/reply"])
