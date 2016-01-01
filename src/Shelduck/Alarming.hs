@@ -2,7 +2,8 @@
 
 module Shelduck.Alarming (
   shouldAlarm,
-  alarm
+  alarm,
+  fatalAlarm
 )  where
 
 import           Control.Lens           hiding ((.=))
@@ -25,3 +26,6 @@ alarm r = if shouldAlarm r then void (liftIO doAlarm) else noop
         doAlarm = sendToSlackRaw $ object ["text" .= alertText]
         alertText :: T.Text
         alertText = "*Alert: test failures have breached threshold*"
+
+fatalAlarm :: String -> IO ()
+fatalAlarm x = sendToSlackRaw $ object ["text" .= ("Fatal: " ++ x)]

@@ -7,6 +7,7 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.STM.TVar
 import           Control.Lens                hiding ((.=))
 import           Control.Monad
+import           Control.Monad.Catch
 import           Control.Monad.State.Strict
 import           Control.Monad.Trans.Reader
 import           Data.Aeson                  (object, (.=))
@@ -18,6 +19,7 @@ import qualified Data.Text                   as T
 import           Data.Time.Clock.POSIX
 import           Data.UUID
 import           Data.UUID.V4
+import           Network.HTTP.Client         (HttpException)
 import qualified Network.Wreq                as W
 import           Shelduck                    hiding (opts)
 import           Shelduck.Alarming
@@ -183,4 +185,10 @@ runIntercomDefinitions = do
   withAsync (server r) $ \webServer ->
     withAsync (runDefs r) $ \testRun -> wait testRun >> cancel webServer
   return ()
-  where runDefs r = execStateT (run r) >=> alarm $ defaultDefinitionListRun
+  where runDefs r = catch (runDefsIO r) handleTestRunHTTPError
+        runDefsIO r = execStateT (run r) >=> alarm $ defaultDefinitionListRun
+
+handleTestRunHTTPError :: HttpException -> IO ()
+handleTestRunHTTPError e = fatalAlarm (show e) >> logFatalError
+  where logFatalError = flush [fatalJson]
+        fatalJson = object ["fatal_error" .= show e]
